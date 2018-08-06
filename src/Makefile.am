@@ -1142,6 +1142,7 @@ libmesos_no_3rdparty_la_SOURCES +=					\
   master/detector/zookeeper.cpp						\
   master/detector/zookeeper.hpp						\
   master/flags.cpp							\
+  master/resources/network_bandwidth.cpp							\
   master/flags.hpp							\
   master/framework.cpp							\
   master/http.cpp							\
@@ -2600,6 +2601,7 @@ mesos_tests_SOURCES =						\
   tests/master_load_tests.cpp					\
   tests/master_maintenance_tests.cpp				\
   tests/master_quota_tests.cpp					\
+  tests/master_resources_network_bandwidth_tests.cpp				\
   tests/master_slave_reconciliation_tests.cpp			\
   tests/master_tests.cpp					\
   tests/master_validation_tests.cpp				\

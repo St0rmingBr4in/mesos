@@ -409,7 +409,9 @@ set(MASTER_SRC
   master/contender/zookeeper.cpp
   master/detector/detector.cpp
   master/detector/standalone.cpp
-  master/detector/zookeeper.cpp)
+  master/detector/zookeeper.cpp
+  master/resources/network_bandwidth.cpp
+  )
 
 set(MESSAGES_SRC
   messages/messages.cpp)
