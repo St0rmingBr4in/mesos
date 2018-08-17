@@ -165,6 +165,7 @@ JSON::Object model(const Resources& resources)
   object.values["gpus"] = 0;
   object.values["mem"] = 0;
   object.values["disk"] = 0;
+  object.values["network_bandwidth"] = 0;
 
   // Model non-revocable resources.
   Resources nonRevocable = resources.nonRevocable();
@@ -722,7 +723,8 @@ void json(
     ResourceIterable end)
 {
   hashmap<string, double> scalars =
-    {{"cpus", 0}, {"gpus", 0}, {"mem", 0}, {"disk", 0}};
+    {{"cpus", 0}, {"gpus", 0}, {"mem", 0}, {"disk", 0},
+     {"network_bandwidth", 0}};
   hashmap<string, Value::Ranges> ranges;
   hashmap<string, Value::Set> sets;
 
