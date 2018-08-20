@@ -117,6 +117,7 @@ public:
   // Optional IP discover script that will set the Master IP.
   // If set, its output is expected to be a valid parseable IP string.
   Option<std::string> ip_discovery_command;
+  bool network_bandwidth_enforcement;
 
 #ifdef ENABLE_PORT_MAPPING_ISOLATOR
   Option<size_t> max_executors_per_agent;
