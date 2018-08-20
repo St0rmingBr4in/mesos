@@ -23,16 +23,6 @@
 #include <stout/gtest.hpp>
 
 namespace mesos {
-bool operator==(const Resource& left, const Resource& right)
-{
-  return left.name() == right.name()
-    && left.type() == right.type()
-    && left.scalar() == right.scalar()
-    && left.allocation_info().role() == right.allocation_info().role();
-}
-} // namespace mesos {
-
-namespace mesos {
 namespace internal {
 namespace tests {
 
@@ -64,7 +54,9 @@ void ASSERT_HAS_NETWORK_BANDWIDTH(
     ASSERT_TRUE(false) << "Network bandwidth should be present.";
   }
   else {
-    ASSERT_EQ(networkBandwidth.get(), expectedNetworkBandwidth);
+    ASSERT_EQ(
+      Resources(networkBandwidth.get()),
+      Resources(expectedNetworkBandwidth));
   }
 }
 
