@@ -28,25 +28,26 @@ namespace resources {
 // Helper function create any kind of unreserved resource.
 mesos::Resource createResource(
   const std::string& resourceName,
-  double amount) {
+  double amount,
+  const std::string& role) {
   mesos::Resource resource;
   resource.set_name(resourceName);
   resource.set_type(mesos::Value::SCALAR);
   resource.mutable_scalar()->set_value(amount);
-  resource.mutable_allocation_info()->set_role("*");
+  resource.mutable_allocation_info()->set_role(role);
   return resource;
 }
 
-mesos::Resource CPU(double amount) {
-  return createResource("cpus", amount);
+mesos::Resource CPU(double amount, const std::string& role) {
+  return createResource("cpus", amount, role);
 }
 
-mesos::Resource NetworkBandwidth(double amount) {
-  return createResource("network_bandwidth", amount);
+mesos::Resource NetworkBandwidth(double amount, const std::string& role) {
+  return createResource("network_bandwidth", amount, role);
 }
 
-mesos::Resource Memory(double amount) {
-  return createResource("mem", amount);
+mesos::Resource Memory(double amount, const std::string& role) {
+  return createResource("mem", amount, role);
 }
 
 } // namespace resources {

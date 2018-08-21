@@ -33,23 +33,11 @@ using mesos::resources::enforceNetworkBandwidthAllocation;
 
 namespace {
 
-Option<Resource> getUnreservedResource(
-    const Resources& resources,
-    const string& resourceName) {
-  foreach(const Resource& resource, resources) {
-    if(resource.name() == resourceName &&
-       resource.allocation_info().role() == "*") {
-      return resource;
-    }
-  }
-  return None();
-}
-
 void ASSERT_HAS_NETWORK_BANDWIDTH(
   const Resources& resources,
   const Resource& expectedNetworkBandwidth) {
-  Option<Resource> networkBandwidth = getUnreservedResource(
-    resources, resources::NETWORK_BANDWIDTH_RESOURCE_NAME);
+  Option<Resources> networkBandwidth =
+    resources.find(Resources(expectedNetworkBandwidth));
 
   if(networkBandwidth.isNone()) {
     ASSERT_TRUE(false) << "Network bandwidth should be present.";
@@ -176,6 +164,33 @@ TEST(MasterResourcesNetworkBandwidthTest, AddDefaultNetworkBandwidth) {
   ASSERT_HAS_NETWORK_BANDWIDTH(
     taskInfo->resources(),
     resources::NetworkBandwidth(500));
+}
+
+
+// When a task does not declare any network bandwidth and the slave advertised
+//      some.
+// Then enforcement computes a default value with the correct role.
+TEST(MasterResourcesNetworkBandwidthTest,
+     ConsumeDefaultNetworkBandwidthCommonResourcesRole) {
+  Offer::Operation operation;
+  operation.set_type(Offer::Operation::LAUNCH);
+  TaskInfo* taskInfo = operation.mutable_launch()->add_task_infos();
+  Resources totalSlaveResources;
+
+  // Declare 100Mbps and 4 CPUs on the slave.
+  totalSlaveResources += resources::NetworkBandwidth(100);
+  totalSlaveResources += resources::CPU(4);
+
+  // Add 1 CPU to the task.
+  taskInfo->mutable_resources()->Add()->CopyFrom(resources::CPU(1, "toto"));
+
+  Option<Error> result = enforceNetworkBandwidthAllocation(
+    totalSlaveResources, operation);
+
+  ASSERT_NONE(result);
+  ASSERT_HAS_NETWORK_BANDWIDTH(
+    taskInfo->resources(),
+    resources::NetworkBandwidth(500, "toto"));
 }
 
 

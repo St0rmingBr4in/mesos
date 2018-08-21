@@ -62,7 +62,10 @@ Option<Label> getLabel(
  * @param task The task to add network bandwidth to.
  * @param amount The amount of network bandwidth in Mbps.
  */
-void addNetworkBandwidth(TaskInfo& task, double amount) {
+void addNetworkBandwidth(
+  TaskInfo& task,
+  double amount,
+  const std::string& role) {
   // At this point, we declare the amount of network bandwidth relative to the
   // number of CPU shares.
   Resource* networkBandwidth = task.add_resources();
@@ -72,7 +75,7 @@ void addNetworkBandwidth(TaskInfo& task, double amount) {
   networkBandwidth->mutable_scalar()->set_value(amount);
   networkBandwidth->set_allocated_allocation_info(
         mesos::Resource_AllocationInfo().New());
-  networkBandwidth->mutable_allocation_info()->set_role("*");
+  networkBandwidth->mutable_allocation_info()->set_role(role);
 }
 
 
@@ -195,8 +198,16 @@ Try<Nothing> enforceNetworkBandwidthAllocation(
     return Error(networkBandwidthFromLabel.error());
   }
 
+  // If the task has no declared resource, we don't associate network bandwidth
+  // to any role. Otherwise we take the role of the first resource as all
+  // reserved resources of a task must have the same role.
+  std::string taskRole = "*";
+  if(task.resources_size() > 0 && task.resources(0).has_allocation_info()) {
+    taskRole = task.resources(0).allocation_info().role();
+  }
+
   if(networkBandwidthFromLabel.get().isSome()) {
-    addNetworkBandwidth(task, networkBandwidthFromLabel.get().get());
+    addNetworkBandwidth(task, networkBandwidthFromLabel.get().get(), taskRole);
     return Nothing();
   }
 
@@ -212,7 +223,7 @@ Try<Nothing> enforceNetworkBandwidthAllocation(
   }
 
   if(defaultNetworkBandwidth.get().isSome()) {
-    addNetworkBandwidth(task, defaultNetworkBandwidth.get().get());
+    addNetworkBandwidth(task, defaultNetworkBandwidth.get().get(), taskRole);
   }
   return Nothing();
 }

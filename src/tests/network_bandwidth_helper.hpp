@@ -31,9 +31,9 @@ const std::string NETWORK_BANDWIDTH_RESOURCE_LABEL =
 const std::string NETWORK_BANDWIDTH_RESOURCE_NAME = "network_bandwidth";
 const std::string CPUS_RESOURCE_NAME = "cpus";
 
-mesos::Resource CPU(double amount);
-mesos::Resource NetworkBandwidth(double amount);
-mesos::Resource Memory(double amount);
+mesos::Resource CPU(double amount, const std::string& role = "*");
+mesos::Resource NetworkBandwidth(double amount, const std::string& role = "*");
+mesos::Resource Memory(double amount, const std::string& role = "*");
 
 } // namespace resources {
 } // namespace tests {
