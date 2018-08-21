@@ -61,16 +61,6 @@ void ASSERT_HAS_NETWORK_BANDWIDTH(
   }
 }
 
-void ASSERT_HAS_NO_NETWORK_BANDWIDTH(
-  const Resources& resources) {
-  Option<Resource> networkBandwidth = getUnreservedResource(
-    resources, resources::NETWORK_BANDWIDTH_RESOURCE_NAME);
-
-  if(networkBandwidth.isSome()) {
-    ASSERT_TRUE(false) << "There should not be any declared network bandwidth.";
-  }
-}
-
 } // namespace {
 
 // Given a task has declared network bandwidth
@@ -245,7 +235,7 @@ TEST(MasterResourcesNetworkBandwidthTest, SlaveHasNoCpu) {
 TEST(MasterResourcesNetworkBandwidthTest, TaskHasNoCpu) {
   Offer::Operation operation;
   operation.set_type(Offer::Operation::LAUNCH);
-  TaskInfo* taskInfo = operation.mutable_launch()->add_task_infos();
+  operation.mutable_launch()->add_task_infos();
   Resources totalSlaveResources;
 
   totalSlaveResources += resources::CPU(4);
