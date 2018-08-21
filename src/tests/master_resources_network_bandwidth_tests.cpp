@@ -32,6 +32,8 @@ const string NETWORK_BANDWIDTH_RESOURCE_LABEL = "NETWORK_BANDWIDTH_RESOURCE";
 const string NETWORK_BANDWIDTH_RESOURCE_NAME = "network_bandwidth";
 const string CPUS_RESOURCE_NAME = "cpus";
 
+namespace {
+
 Option<Resource> getUnreservedResource(
     const Resources& resources,
     const string& resourceName) {
@@ -87,6 +89,8 @@ Resource CPU(double amount) {
 Resource NetworkBandwidth(double amount) {
   return createResource(NETWORK_BANDWIDTH_RESOURCE_NAME, amount);
 }
+
+} // namespace {
 
 // Given a task has declared network bandwidth
 // Then enforcement should let the task goes through without update.
