@@ -4362,7 +4362,20 @@ void Master::accept(
     accept.clear_operations();
 
     foreach (Offer::Operation& operation, operations) {
-      Option<Error> error = validateAndUpgradeResources(&operation);
+      Option<Error> error;
+      if(flags.network_bandwidth_enforcement) {
+        error = resources::enforceNetworkBandwidthAllocation(
+              slave->totalResources, operation);
+        if(error.isSome()) {
+          LOG(WARNING) << "[NETWORK BANDWIDTH]:" <<
+                          error.get().message;
+        }
+      }
+
+      if(error.isNone()) {
+         error = validateAndUpgradeResources(&operation);
+      }
+
       if (error.isSome()) {
         switch (operation.type()) {
           case Offer::Operation::RESERVE:
@@ -4491,10 +4504,6 @@ void Master::accept(
     }
   }
 
-  CHECK_SOME(slaveId);
-  Slave* slave = slaves.registered.get(slaveId.get());
-  CHECK_NOTNULL(slave);
-
   // We make various adjustments to the `Offer::Operation`s,
   // typically for backward/forward compatibility.
   // TODO(mpark): Pull this out to a master normalization utility.
@@ -4557,13 +4566,6 @@ void Master::accept(
               HookManager::masterLaunchTaskResourceDecorator(task,
                 slave->totalResources);
             }
-          if (flags.network_bandwidth_enforcement) {
-            Try<Nothing> result = resources::enforceNetworkBandwidthAllocation(
-              slave->totalResources, task);
-            if(result.isError()) {
-              LOG(WARNING) << result.error();
-            }
-          }
         }
 
         break;
@@ -4585,13 +4587,6 @@ void Master::accept(
             *task.mutable_resources() =
               HookManager::masterLaunchTaskResourceDecorator(task,
                 slave->totalResources);
-          }
-          if (flags.network_bandwidth_enforcement) {
-            Try<Nothing> result = resources::enforceNetworkBandwidthAllocation(
-              slave->totalResources, task);
-            if(result.isError()) {
-              LOG(WARNING) << result.error();
-            }
           }
         }
 

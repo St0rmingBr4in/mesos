@@ -39,6 +39,7 @@
 
 #include "tests/containerizer.hpp"
 #include "tests/mesos.hpp"
+#include "tests/network_bandwidth_helper.hpp"
 
 #include <stout/gtest.hpp>
 
@@ -60,39 +61,11 @@ namespace mesos {
 namespace internal {
 namespace tests {
 
-class MasterNetworkBandwidthSchedulingTest : public MesosTest {
-public:
-};
-
-namespace {
-
-// Helper function create any kind of unreserved resource.
-Resource createResource(const string& resourceName, double amount) {
-  Resource resource;
-  resource.set_name(resourceName);
-  resource.set_type(mesos::Value::SCALAR);
-  resource.mutable_scalar()->set_value(amount);
-  resource.mutable_allocation_info()->set_role("*");
-  return resource;
-}
-
-Resource CPU(double amount) {
-  return createResource("cpus", amount);
-}
-
-Resource NetworkBandwidth(double amount) {
-  return createResource("network_bandwidth", amount);
-}
-
-Resource Memory(double amount) {
-  return createResource("mem", amount);
-}
-
-} // namespace {
+class MasterNetworkBandwidthSchedulingTest : public MesosTest {};
 
 // Given a task declares network bandwidth,
-// When it is scheduled,
-// Then it has a running status.
+// When the task is scheduled,
+// Then the scheduler reports the task is running.
 TEST_F(MasterNetworkBandwidthSchedulingTest, TaskRunningWithNetworkBandwidth)
 {
   Option<master::Flags> masterFlags = MesosTest::CreateMasterFlags();
@@ -130,9 +103,9 @@ TEST_F(MasterNetworkBandwidthSchedulingTest, TaskRunningWithNetworkBandwidth)
   ASSERT_NE(0u, offers->size());
 
   Resources taskDeclaredResources;
-  taskDeclaredResources += CPU(1);
-  taskDeclaredResources += Memory(100);
-  taskDeclaredResources += NetworkBandwidth(50);
+  taskDeclaredResources += resources::CPU(1);
+  taskDeclaredResources += resources::Memory(100);
+  taskDeclaredResources += resources::NetworkBandwidth(50);
 
   TaskInfo task;
   task.set_name("");
@@ -213,9 +186,9 @@ TEST_F(MasterNetworkBandwidthSchedulingTest,
   ASSERT_NE(0u, offers->size());
 
   Resources taskDeclaredResources;
-  taskDeclaredResources += CPU(1);
-  taskDeclaredResources += Memory(100);
-  taskDeclaredResources += NetworkBandwidth(2000);
+  taskDeclaredResources += resources::CPU(1);
+  taskDeclaredResources += resources::Memory(100);
+  taskDeclaredResources += resources::NetworkBandwidth(2000);
 
   TaskInfo task;
   task.set_name("");
@@ -241,9 +214,9 @@ TEST_F(MasterNetworkBandwidthSchedulingTest,
 }
 
 // Given a task declares network bandwidth in a label,
-// When it is scheduled,
-// Then it is provided with the amount declared in the label
-// And the task is running.
+// When the task is scheduled,
+// Then task info is provided with the amount declared in the label
+// And the scheduler reports the task is running.
 TEST_F(MasterNetworkBandwidthSchedulingTest,
        TaskRunningWithNetworkBandwidthInLabel)
 {
@@ -282,11 +255,11 @@ TEST_F(MasterNetworkBandwidthSchedulingTest,
   ASSERT_NE(0u, offers->size());
 
   Resources taskDeclaredResources;
-  taskDeclaredResources += CPU(1);
-  taskDeclaredResources += Memory(100);
+  taskDeclaredResources += resources::CPU(1);
+  taskDeclaredResources += resources::Memory(100);
 
   Resources taskActualResources = taskDeclaredResources;
-  taskActualResources += NetworkBandwidth(20);
+  taskActualResources += resources::NetworkBandwidth(20);
 
   TaskInfo task;
   task.set_name("");
@@ -295,7 +268,7 @@ TEST_F(MasterNetworkBandwidthSchedulingTest,
   task.mutable_resources()->MergeFrom(taskDeclaredResources);
   task.mutable_executor()->MergeFrom(DEFAULT_EXECUTOR_INFO);
   mesos::Label* label = task.mutable_labels()->add_labels();
-  label->set_key("NETWORK_BANDWIDTH_RESOURCE");
+  label->set_key(resources::NETWORK_BANDWIDTH_RESOURCE_LABEL);
   label->set_value("20");
 
   EXPECT_CALL(exec, registered(_, _, _, _));
@@ -371,8 +344,8 @@ TEST_F(MasterNetworkBandwidthSchedulingTest,
   ASSERT_NE(0u, offers->size());
 
   Resources taskDeclaredResources;
-  taskDeclaredResources += CPU(1);
-  taskDeclaredResources += Memory(100);
+  taskDeclaredResources += resources::CPU(1);
+  taskDeclaredResources += resources::Memory(100);
 
   TaskInfo task;
   task.set_name("");
@@ -381,13 +354,8 @@ TEST_F(MasterNetworkBandwidthSchedulingTest,
   task.mutable_resources()->MergeFrom(taskDeclaredResources);
   task.mutable_executor()->MergeFrom(DEFAULT_EXECUTOR_INFO);
   mesos::Label* label = task.mutable_labels()->add_labels();
-  label->set_key("NETWORK_BANDWIDTH_RESOURCE");
+  label->set_key(resources::NETWORK_BANDWIDTH_RESOURCE_LABEL);
   label->set_value("bad_20");
-
-  EXPECT_CALL(exec, registered(_, _, _, _));
-
-  EXPECT_CALL(exec, launchTask(_, _))
-    .WillOnce(SendStatusUpdateFromTask(TASK_RUNNING));
 
   Future<TaskStatus> status;
   EXPECT_CALL(sched, statusUpdate(&driver, _))
@@ -407,7 +375,7 @@ TEST_F(MasterNetworkBandwidthSchedulingTest,
 // Given a task does not declare network bandwidth,
 // When it is scheduled,
 // Then it is provided with a default value for network bandwidth
-// And the task is running.
+// And the scheduler reports the task is running.
 TEST_F(MasterNetworkBandwidthSchedulingTest, TaskRunningWithoutNetworkBandwidth)
 {
   Option<master::Flags> masterFlags = MesosTest::CreateMasterFlags();
@@ -445,11 +413,11 @@ TEST_F(MasterNetworkBandwidthSchedulingTest, TaskRunningWithoutNetworkBandwidth)
   ASSERT_NE(0u, offers->size());
 
   Resources taskDeclaredResources;
-  taskDeclaredResources += CPU(1);
-  taskDeclaredResources += Memory(100);
+  taskDeclaredResources += resources::CPU(1);
+  taskDeclaredResources += resources::Memory(100);
 
   Resources taskActualResources = taskDeclaredResources;
-  taskActualResources += NetworkBandwidth(500);
+  taskActualResources += resources::NetworkBandwidth(500);
 
   TaskInfo task;
   task.set_name("");

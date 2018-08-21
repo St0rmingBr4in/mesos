@@ -161,7 +161,7 @@ Try<Option<double>> getNetworkBandwidthFromLabel(
 
 
 /**
- * @brief Enforce network bandwidth allocation (see header for more details).
+ * @brief Enforce network bandwidth allocation for a given task.
  *
  * @param slaveTotalResources The resources declared on the slave.
  * @param task The task to enforce network bandwidth for.
@@ -215,6 +215,57 @@ Try<Nothing> enforceNetworkBandwidthAllocation(
     addNetworkBandwidth(task, defaultNetworkBandwidth.get().get());
   }
   return Nothing();
+}
+
+/**
+ * @brief Enforce network bandwidth allocation for an operation, i.e., either
+ *   at task or a task group (see header for more details).
+ *
+ * @param slaveTotalResources The resources declared on the slave.
+ * @param operation The operation to enforce network bandwidth for.
+ * @return None if no enforcement is done or if it is successful, otherwise
+ *  an Error.
+ */
+Option<Error> enforceNetworkBandwidthAllocation(
+  const Resources& slaveTotalResources,
+  Offer::Operation& operation)
+{
+  switch (operation.type()) {
+    case Offer::Operation::LAUNCH: {
+      foreach (
+        TaskInfo& task, *operation.mutable_launch()->mutable_task_infos()) {
+        Try<Nothing> result = resources::enforceNetworkBandwidthAllocation(
+          slaveTotalResources, task);
+        if(result.isError()) {
+          return result.error();
+        }
+      }
+
+      break;
+    }
+    case Offer::Operation::LAUNCH_GROUP: {
+      TaskGroupInfo* taskGroup =
+        operation.mutable_launch_group()->mutable_task_group();
+
+      // Mutate `TaskInfo` to include `ExecutorInfo` to make it easy
+      // for operator API and WebUI to get access to the corresponding
+      // executor for tasks in the task group.
+      foreach (TaskInfo& task, *taskGroup->mutable_tasks()) {
+        Try<Nothing> result = resources::enforceNetworkBandwidthAllocation(
+          slaveTotalResources, task);
+        if(result.isError()) {
+          return result.error();
+        }
+      }
+
+      break;
+    }
+    default: {
+      // No-op.
+      break;
+    }
+  }
+  return None();
 }
 
 } // namespace resources {

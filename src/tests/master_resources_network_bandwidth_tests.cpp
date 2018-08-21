@@ -22,15 +22,14 @@
 
 #include <stout/gtest.hpp>
 
+#include "tests/network_bandwidth_helper.hpp"
+
 namespace mesos {
 namespace internal {
 namespace tests {
 
 using std::string;
-
-const string NETWORK_BANDWIDTH_RESOURCE_LABEL = "NETWORK_BANDWIDTH_RESOURCE";
-const string NETWORK_BANDWIDTH_RESOURCE_NAME = "network_bandwidth";
-const string CPUS_RESOURCE_NAME = "cpus";
+using mesos::resources::enforceNetworkBandwidthAllocation;
 
 namespace {
 
@@ -50,7 +49,7 @@ void ASSERT_HAS_NETWORK_BANDWIDTH(
   const Resources& resources,
   const Resource& expectedNetworkBandwidth) {
   Option<Resource> networkBandwidth = getUnreservedResource(
-    resources, NETWORK_BANDWIDTH_RESOURCE_NAME);
+    resources, resources::NETWORK_BANDWIDTH_RESOURCE_NAME);
 
   if(networkBandwidth.isNone()) {
     ASSERT_TRUE(false) << "Network bandwidth should be present.";
@@ -65,29 +64,11 @@ void ASSERT_HAS_NETWORK_BANDWIDTH(
 void ASSERT_HAS_NO_NETWORK_BANDWIDTH(
   const Resources& resources) {
   Option<Resource> networkBandwidth = getUnreservedResource(
-    resources, NETWORK_BANDWIDTH_RESOURCE_NAME);
+    resources, resources::NETWORK_BANDWIDTH_RESOURCE_NAME);
 
   if(networkBandwidth.isSome()) {
     ASSERT_TRUE(false) << "There should not be any declared network bandwidth.";
   }
-}
-
-// Helper function create any kind of unreserved resource.
-Resource createResource(const string& resourceName, double amount) {
-  Resource resource;
-  resource.set_name(resourceName);
-  resource.set_type(mesos::Value::SCALAR);
-  resource.mutable_scalar()->set_value(amount);
-  resource.mutable_allocation_info()->set_role("*");
-  return resource;
-}
-
-Resource CPU(double amount) {
-  return createResource(CPUS_RESOURCE_NAME, amount);
-}
-
-Resource NetworkBandwidth(double amount) {
-  return createResource(NETWORK_BANDWIDTH_RESOURCE_NAME, amount);
 }
 
 } // namespace {
@@ -95,56 +76,67 @@ Resource NetworkBandwidth(double amount) {
 // Given a task has declared network bandwidth
 // Then enforcement should let the task goes through without update.
 TEST(MasterResourcesNetworkBandwidthTest, ConsumeDeclaredNetworkBandwidth) {
-  TaskInfo task;
+  Offer::Operation operation;
+  operation.set_type(Offer::Operation::LAUNCH);
+  TaskInfo* taskInfo = operation.mutable_launch()->add_task_infos();
   Resources totalSlaveResources;
 
   // Add 30Mbps of network bandwidth to the task.
-  task.mutable_resources()->Add()->CopyFrom(NetworkBandwidth(30));
+  taskInfo->mutable_resources()->Add()->CopyFrom(
+    resources::NetworkBandwidth(30));
 
-  Try<Nothing> result = resources::enforceNetworkBandwidthAllocation(
-    totalSlaveResources, task);
+  Option<Error> result = enforceNetworkBandwidthAllocation(
+    totalSlaveResources, operation);
 
-  ASSERT_SOME(result);
-  ASSERT_HAS_NETWORK_BANDWIDTH(task.resources(), NetworkBandwidth(30));
+  ASSERT_NONE(result);
+  ASSERT_HAS_NETWORK_BANDWIDTH(
+    taskInfo->resources(),
+    resources::NetworkBandwidth(30));
 }
 
 
 // Given a task is declaring network bandwidth in a label
 // Then the enforcement adds it to the task.
 TEST(MasterResourcesNetworkBandwidthTest, ConsumeNetworkBandwidthInLabel) {
-  TaskInfo task;
+  Offer::Operation operation;
+  operation.set_type(Offer::Operation::LAUNCH);
+  TaskInfo* taskInfo = operation.mutable_launch()->add_task_infos();
   Resources totalSlaveResources;
 
   // Add 50Mbps of network bandwidth by label.
-  Label* label = task.mutable_labels()->add_labels();
-  label->set_key(NETWORK_BANDWIDTH_RESOURCE_LABEL);
+  Label* label = taskInfo->mutable_labels()->add_labels();
+  label->set_key(resources::NETWORK_BANDWIDTH_RESOURCE_LABEL);
   label->set_value("50");
 
-  Try<Nothing> result = resources::enforceNetworkBandwidthAllocation(
-    totalSlaveResources, task);
+  Option<Error> result = enforceNetworkBandwidthAllocation(
+    totalSlaveResources, operation);
 
-  ASSERT_SOME(result);
-  ASSERT_HAS_NETWORK_BANDWIDTH(task.resources(), NetworkBandwidth(50));
+  ASSERT_NONE(result);
+  ASSERT_HAS_NETWORK_BANDWIDTH(
+    taskInfo->resources(),
+    resources::NetworkBandwidth(50));
 }
 
 
 // Given a task is declaring network bandwidth in a label with wrong format
 // Then the enforcement should fail with an error
 TEST(MasterResourcesNetworkBandwidthTest, WrongFormatLabel) {
-  TaskInfo task;
+  Offer::Operation operation;
+  operation.set_type(Offer::Operation::LAUNCH);
+  TaskInfo* taskInfo = operation.mutable_launch()->add_task_infos();
   Resources totalSlaveResources;
 
   // Add 50Mbps of network bandwidth by label.
-  Label* label = task.mutable_labels()->add_labels();
-  label->set_key(NETWORK_BANDWIDTH_RESOURCE_LABEL);
+  Label* label = taskInfo->mutable_labels()->add_labels();
+  label->set_key(resources::NETWORK_BANDWIDTH_RESOURCE_LABEL);
   label->set_value("a50");
 
-  Try<Nothing> result = resources::enforceNetworkBandwidthAllocation(
-    totalSlaveResources, task);
+  Option<Error> result = enforceNetworkBandwidthAllocation(
+    totalSlaveResources, operation);
 
-  ASSERT_ERROR(result);
+  ASSERT_SOME(result);
   ASSERT_EQ("Invalid network bandwidth resource format. "\
-            "Should be an integer.", result.error());
+            "Should be an integer.", result.get().message);
 }
 
 
@@ -152,19 +144,21 @@ TEST(MasterResourcesNetworkBandwidthTest, WrongFormatLabel) {
 //       label
 // Then the enforcement should fail with an error
 TEST(MasterResourcesNetworkBandwidthTest, OutOfRangeLabel) {
-  TaskInfo task;
+  Offer::Operation operation;
+  operation.set_type(Offer::Operation::LAUNCH);
+  TaskInfo* taskInfo = operation.mutable_launch()->add_task_infos();
   Resources totalSlaveResources;
 
   // Add 50Mbps of network bandwidth by label.
-  Label* label = task.mutable_labels()->add_labels();
-  label->set_key(NETWORK_BANDWIDTH_RESOURCE_LABEL);
+  Label* label = taskInfo->mutable_labels()->add_labels();
+  label->set_key(resources::NETWORK_BANDWIDTH_RESOURCE_LABEL);
   label->set_value("5000000000000000000000000000000000000000000000000000");
 
-  Try<Nothing> result = resources::enforceNetworkBandwidthAllocation(
-    totalSlaveResources, task);
+  Option<Error> result = enforceNetworkBandwidthAllocation(
+    totalSlaveResources, operation);
 
-  ASSERT_ERROR(result);
-  ASSERT_EQ("Network bandwidth amount is out of range.", result.error());
+  ASSERT_SOME(result);
+  ASSERT_EQ("Network bandwidth amount is out of range.", result.get().message);
 }
 
 
@@ -173,21 +167,25 @@ TEST(MasterResourcesNetworkBandwidthTest, OutOfRangeLabel) {
 // Then enforcement computes a default value based on share of CPUs and the
 //      pool of 2Gbps.
 TEST(MasterResourcesNetworkBandwidthTest, AddDefaultNetworkBandwidth) {
-  TaskInfo task;
+  Offer::Operation operation;
+  operation.set_type(Offer::Operation::LAUNCH);
+  TaskInfo* taskInfo = operation.mutable_launch()->add_task_infos();
   Resources totalSlaveResources;
 
   // Declare 100Mbps and 4 CPUs on the slave.
-  totalSlaveResources += NetworkBandwidth(100);
-  totalSlaveResources += CPU(4);
+  totalSlaveResources += resources::NetworkBandwidth(100);
+  totalSlaveResources += resources::CPU(4);
 
   // Add 1 CPU to the task.
-  task.mutable_resources()->Add()->CopyFrom(CPU(1));
+  taskInfo->mutable_resources()->Add()->CopyFrom(resources::CPU(1));
 
-  Try<Nothing> result = resources::enforceNetworkBandwidthAllocation(
-    totalSlaveResources, task);
+  Option<Error> result = enforceNetworkBandwidthAllocation(
+    totalSlaveResources, operation);
 
-  ASSERT_SOME(result);
-  ASSERT_HAS_NETWORK_BANDWIDTH(task.resources(), NetworkBandwidth(500));
+  ASSERT_NONE(result);
+  ASSERT_HAS_NETWORK_BANDWIDTH(
+    taskInfo->resources(),
+    resources::NetworkBandwidth(500));
 }
 
 
@@ -195,20 +193,24 @@ TEST(MasterResourcesNetworkBandwidthTest, AddDefaultNetworkBandwidth) {
 // declare any either,
 // Then the task has a default value taken from 2Gbps pool.
 TEST(MasterResourcesNetworkBandwidthTest, SlaveDoesNotDeclareNetworkBandwidth) {
-  TaskInfo task;
+  Offer::Operation operation;
+  operation.set_type(Offer::Operation::LAUNCH);
+  TaskInfo* taskInfo = operation.mutable_launch()->add_task_infos();
   Resources totalSlaveResources;
 
   // Declare 4 CPUs but no network bandwidth on the slave.
-  totalSlaveResources += CPU(4);
+  totalSlaveResources += resources::CPU(4);
 
   // Add 1 CPU to the task.
-  task.mutable_resources()->Add()->CopyFrom(CPU(1));
+  taskInfo->mutable_resources()->Add()->CopyFrom(resources::CPU(1));
 
-  Try<Nothing> result = resources::enforceNetworkBandwidthAllocation(
-    totalSlaveResources, task);
+  Option<Error> result = enforceNetworkBandwidthAllocation(
+    totalSlaveResources, operation);
 
-  ASSERT_SOME(result);
-  ASSERT_HAS_NETWORK_BANDWIDTH(task.resources(), NetworkBandwidth(500));
+  ASSERT_NONE(result);
+  ASSERT_HAS_NETWORK_BANDWIDTH(
+    taskInfo->resources(),
+    resources::NetworkBandwidth(500));
 }
 
 
@@ -217,20 +219,22 @@ TEST(MasterResourcesNetworkBandwidthTest, SlaveDoesNotDeclareNetworkBandwidth) {
 //      CPU shares
 // Then it raises an error.
 TEST(MasterResourcesNetworkBandwidthTest, SlaveHasNoCpu) {
-  TaskInfo task;
+  Offer::Operation operation;
+  operation.set_type(Offer::Operation::LAUNCH);
+  TaskInfo* taskInfo = operation.mutable_launch()->add_task_infos();
   Resources totalSlaveResources;
 
-  totalSlaveResources += NetworkBandwidth(100);
+  totalSlaveResources += resources::NetworkBandwidth(100);
 
   // Reserve 1 CPU.
-  task.mutable_resources()->Add()->CopyFrom(CPU(1));
+  taskInfo->mutable_resources()->Add()->CopyFrom(resources::CPU(1));
 
-  Try<Nothing> result = resources::enforceNetworkBandwidthAllocation(
-    totalSlaveResources, task);
+  Option<Error> result = enforceNetworkBandwidthAllocation(
+    totalSlaveResources, operation);
 
-  ASSERT_ERROR(result);
+  ASSERT_SOME(result);
   ASSERT_EQ("No CPU advertised by the slave. " \
-            "Cannot deduce network bandwidth.", result.error());
+            "Cannot deduce network bandwidth.", result.get().message);
 }
 
 
@@ -239,18 +243,20 @@ TEST(MasterResourcesNetworkBandwidthTest, SlaveHasNoCpu) {
 //      CPU shares,
 // Then it raises an error.
 TEST(MasterResourcesNetworkBandwidthTest, TaskHasNoCpu) {
-  TaskInfo task;
+  Offer::Operation operation;
+  operation.set_type(Offer::Operation::LAUNCH);
+  TaskInfo* taskInfo = operation.mutable_launch()->add_task_infos();
   Resources totalSlaveResources;
 
-  totalSlaveResources += CPU(4);
-  totalSlaveResources += NetworkBandwidth(100);
+  totalSlaveResources += resources::CPU(4);
+  totalSlaveResources += resources::NetworkBandwidth(100);
 
-  Try<Nothing> result = resources::enforceNetworkBandwidthAllocation(
-    totalSlaveResources, task);
+  Option<Error> result = enforceNetworkBandwidthAllocation(
+    totalSlaveResources, operation);
 
-  ASSERT_ERROR(result);
+  ASSERT_SOME(result);
   ASSERT_EQ("No CPU declared in the task. " \
-            "Cannot deduce network bandwidth.", result.error());
+            "Cannot deduce network bandwidth.", result.get().message);
 }
 
 
@@ -263,23 +269,25 @@ TEST(MasterResourcesNetworkBandwidthTest, TaskHasNoCpu) {
 //      CPU shares,
 // Then it returns 0 for network bandwidth.
 TEST(MasterResourcesNetworkBandwidthTest, DivisonByZero) {
-  TaskInfo task;
+  Offer::Operation operation;
+  operation.set_type(Offer::Operation::LAUNCH);
+  TaskInfo* taskInfo = operation.mutable_launch()->add_task_infos();
   Resources totalSlaveResources;
 
   // Declare 0.00001 CPUs and 100Mbps of network bandwidth.
   // The CPU is filtered out during the addition.
-  totalSlaveResources += CPU(0.00001);
-  totalSlaveResources += NetworkBandwidth(100);
+  totalSlaveResources += resources::CPU(0.00001);
+  totalSlaveResources += resources::NetworkBandwidth(100);
 
   // Add 0 CPU to the task.
-  task.mutable_resources()->Add()->CopyFrom(CPU(1));
+  taskInfo->mutable_resources()->Add()->CopyFrom(resources::CPU(1));
 
-  Try<Nothing> result = resources::enforceNetworkBandwidthAllocation(
-    totalSlaveResources, task);
+  Option<Error> result = enforceNetworkBandwidthAllocation(
+    totalSlaveResources, operation);
 
-  ASSERT_ERROR(result);
+  ASSERT_SOME(result);
   ASSERT_EQ("No CPU advertised by the slave. "\
-            "Cannot deduce network bandwidth.", result.error());
+            "Cannot deduce network bandwidth.", result.get().message);
 }
 
 } // namespace tests {

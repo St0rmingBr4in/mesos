@@ -35,21 +35,28 @@ namespace resources {
  * scheduler via resources or labels. Otherwise it is computed and added to the
  * task. The computation is the following:
  *
- * TaskNetworkBandwidth = TaskCpus / SlaveCpus * SlaveNetworkBandwidth.
+ * TaskNetworkBandwidth = TaskCpus / SlaveCpus * 2000.
  *
  * This computation is definitely Criteo specific and could be anything else.
+ * 2000 is equivalent to 2Gbps which is the lowest common amount of network
+ * bandwidth available on each agent in the entire Criteo infrastructure.
+ * We set a constant here, for 2 reasons: backward compatibility and ensure
+ * two instances of the same app have the same limit.
+ *
+ * TODO(clems4ever): make this value customizable by flag.
  *
  * Note: this amount of network bandwidth is taken out from unreserved
  *       resources since we don't take roles into account yet.
  *
  * @param slaveTotalResources The resources declared on the slave.
- * @param task The task to enforce network bandwidth declaration for.
- * @return Nothing if enforcement is not applied or successful otherwise an
+ * @param operation The operation for which to enforce network bandwidth
+ *   reservation for.
+ * @return None if enforcement is not applied or successful otherwise an
  *         Error.
  */
-Try<Nothing> enforceNetworkBandwidthAllocation(
+Option<Error> enforceNetworkBandwidthAllocation(
   const Resources& slaveTotalResources,
-  TaskInfo& task);
+  Offer::Operation& operation);
 
 } // namespace resources {
 } // namespace mesos {

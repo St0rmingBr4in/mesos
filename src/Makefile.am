@@ -2386,6 +2386,7 @@ test_helper_SOURCES =						\
   tests/flags.cpp						\
   tests/http_server_test_helper.cpp				\
   tests/kill_policy_test_helper.cpp				\
+  tests/network_bandwidth_helper.cpp				\
   tests/resources_utils.cpp					\
   tests/test_helper_main.cpp					\
   tests/utils.cpp						\
@@ -2622,6 +2623,7 @@ mesos_tests_SOURCES =						\
   tests/module.cpp						\
   tests/module.hpp						\
   tests/module_tests.cpp					\
+  tests/network_bandwidth_helper.cpp				\
   tests/operation_reconciliation_tests.cpp			\
   tests/operation_status_update_manager_tests.cpp		\
   tests/oversubscription_tests.cpp				\
