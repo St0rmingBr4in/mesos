@@ -16,6 +16,8 @@
 
 #include <string>
 
+#include <google/protobuf/repeated_field.h>
+
 #include "master/resources/network_bandwidth.hpp"
 
 #include <mesos/resources.hpp>
@@ -26,6 +28,8 @@ namespace mesos {
 namespace resources {
 
 using namespace std;
+
+using google::protobuf::RepeatedPtrField;
 
 using mesos::internal::slave::Slave;
 
@@ -61,6 +65,8 @@ Option<Label> getLabel(
  *
  * @param task The task to add network bandwidth to.
  * @param amount The amount of network bandwidth in Mbps.
+ * @param role The role to allocate this resource to.
+ * @param allocationInfo
  */
 void addNetworkBandwidth(
   TaskInfo& task,
@@ -71,11 +77,34 @@ void addNetworkBandwidth(
   Resource* networkBandwidth = task.add_resources();
   networkBandwidth->set_name(NETWORK_BANDWIDTH_RESOURCE_NAME);
   networkBandwidth->set_type(mesos::Value::SCALAR);
-
   networkBandwidth->mutable_scalar()->set_value(amount);
-  networkBandwidth->set_allocated_allocation_info(
-        mesos::Resource_AllocationInfo().New());
-  networkBandwidth->mutable_allocation_info()->set_role(role);
+
+  if (!role.empty()) {
+    networkBandwidth->set_role(role);
+  }
+}
+
+
+/**
+ * @brief Find a resource by its name.
+ * @param resources The set of resources to search into.
+ * @param name Name of the resource to find.
+ * @return The resource if it is found, otherwise None.
+ */
+Option<Resource> findResource(
+  const RepeatedPtrField<Resource>& resources,
+  const std::string& name) {
+  auto networkBandwidthResourceIt =
+    std::find_if(resources.begin(), resources.end(),
+      [name](const Resource& r) {
+        return r.name() == name;
+      });
+
+  if (networkBandwidthResourceIt != resources.end()) {
+    return *networkBandwidthResourceIt;
+  }
+
+  return None();
 }
 
 
@@ -89,7 +118,7 @@ void addNetworkBandwidth(
  *   CPU.
  */
 Try<Option<double>> computeNetworkBandwidthBasedOnShareOfCpu(
-  const Resources& taskResources,
+  const RepeatedPtrField<Resource>& taskResources,
   const Resources& slaveTotalResources) {
   // The following constant is defining the total amount of network bandwidth
   // pool to allocate from when a task does not define network bandwidth
@@ -103,14 +132,17 @@ Try<Option<double>> computeNetworkBandwidthBasedOnShareOfCpu(
   double DEFAULT_ALLOCATABLE_NETWORK_BANDWIDTH_IN_MBPS = 2000;
 
   Option<double> totalCpus = slaveTotalResources.cpus();
-  Option<double> reservedCpus = taskResources.cpus();
+  Option<Resource> reservedCpus = findResource(
+    taskResources,
+    CPUS_RESOURCE_NAME);
 
   if(totalCpus.isNone()) {
     return Error("No CPU advertised by the slave. " \
                  "Cannot deduce network bandwidth.");
   }
 
-  if(reservedCpus.isNone()) {
+  if(reservedCpus.isNone() || !reservedCpus.get().has_scalar() ||
+     !reservedCpus.get().scalar().has_value()) {
     return Error("No CPU declared in the task. " \
                  "Cannot deduce network bandwidth.");
   }
@@ -123,7 +155,7 @@ Try<Option<double>> computeNetworkBandwidthBasedOnShareOfCpu(
     return 0.0;
   }
 
-  return reservedCpus.get() /
+  return reservedCpus.get().scalar().value() /
     totalCpus.get() *
     DEFAULT_ALLOCATABLE_NETWORK_BANDWIDTH_IN_MBPS;
 }
@@ -162,7 +194,6 @@ Try<Option<double>> getNetworkBandwidthFromLabel(
   return None();
 }
 
-
 /**
  * @brief Enforce network bandwidth allocation for a given task.
  *
@@ -179,13 +210,12 @@ Try<Nothing> enforceNetworkBandwidthAllocation(
 {
   // We first check if network bandwidth is already declared. In that case
   // we do not enforce allocation.
-  Option<Value::Scalar> networkBandwidthResource =
-    Resources(task.resources())
-      .get<Value::Scalar>(NETWORK_BANDWIDTH_RESOURCE_NAME);
+  Option<Resource> networkBandwidthResource = findResource(
+    task.resources(),
+    NETWORK_BANDWIDTH_RESOURCE_NAME);
 
-  if(networkBandwidthResource.isSome()) {
-    LOG(INFO) << "Network bandwidth is specified in resources. " \
-                 "No enforcement done.";
+  if (networkBandwidthResource.isSome()) {
+    LOG(INFO) << "Network bandwidth is specified in resources.";
     return Nothing(); // Nothing to enforce if network bandwidth is declared.
   }
 
@@ -194,20 +224,24 @@ Try<Nothing> enforceNetworkBandwidthAllocation(
   Try<Option<double>> networkBandwidthFromLabel =
       getNetworkBandwidthFromLabel(task.labels());
 
-  if(networkBandwidthFromLabel.isError()) {
+  if (networkBandwidthFromLabel.isError()) {
     return Error(networkBandwidthFromLabel.error());
   }
 
   // If the task has no declared resource, we don't associate network bandwidth
-  // to any role. Otherwise we take the role of the first resource as all
+  // to any role. Otherwise we take the role of the first resource since all
   // reserved resources of a task must have the same role.
-  std::string taskRole = "*";
-  if(task.resources_size() > 0 && task.resources(0).has_allocation_info()) {
-    taskRole = task.resources(0).allocation_info().role();
+  // Note: we also support multi-role frameworks with allocation info role.
+  std::string taskRole;
+  if (task.resources_size() > 0 && task.resources(0).has_role()) {
+    taskRole = task.resources(0).role();
   }
 
-  if(networkBandwidthFromLabel.get().isSome()) {
-    addNetworkBandwidth(task, networkBandwidthFromLabel.get().get(), taskRole);
+  if (networkBandwidthFromLabel.get().isSome()) {
+    addNetworkBandwidth(
+      task,
+      networkBandwidthFromLabel.get().get(),
+      taskRole);
     return Nothing();
   }
 
@@ -218,12 +252,15 @@ Try<Nothing> enforceNetworkBandwidthAllocation(
         task.resources(),
         slaveTotalResources);
 
-  if(defaultNetworkBandwidth.isError()) {
+  if (defaultNetworkBandwidth.isError()) {
     return Error(defaultNetworkBandwidth.error());
   }
 
-  if(defaultNetworkBandwidth.get().isSome()) {
-    addNetworkBandwidth(task, defaultNetworkBandwidth.get().get(), taskRole);
+  if (defaultNetworkBandwidth.get().isSome()) {
+    addNetworkBandwidth(
+      task,
+      defaultNetworkBandwidth.get().get(),
+      taskRole);
   }
   return Nothing();
 }
@@ -247,7 +284,7 @@ Option<Error> enforceNetworkBandwidthAllocation(
         TaskInfo& task, *operation.mutable_launch()->mutable_task_infos()) {
         Try<Nothing> result = resources::enforceNetworkBandwidthAllocation(
           slaveTotalResources, task);
-        if(result.isError()) {
+        if (result.isError()) {
           return result.error();
         }
       }
@@ -264,7 +301,7 @@ Option<Error> enforceNetworkBandwidthAllocation(
       foreach (TaskInfo& task, *taskGroup->mutable_tasks()) {
         Try<Nothing> result = resources::enforceNetworkBandwidthAllocation(
           slaveTotalResources, task);
-        if(result.isError()) {
+        if (result.isError()) {
           return result.error();
         }
       }

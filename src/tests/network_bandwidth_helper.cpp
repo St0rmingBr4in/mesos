@@ -34,19 +34,27 @@ mesos::Resource createResource(
   resource.set_name(resourceName);
   resource.set_type(mesos::Value::SCALAR);
   resource.mutable_scalar()->set_value(amount);
-  resource.mutable_allocation_info()->set_role(role);
+  if (!role.empty()) {
+    resource.set_role(role);
+  }
   return resource;
 }
 
-mesos::Resource CPU(double amount, const std::string& role) {
+mesos::Resource CPU(
+  double amount,
+  const std::string& role) {
   return createResource("cpus", amount, role);
 }
 
-mesos::Resource NetworkBandwidth(double amount, const std::string& role) {
+mesos::Resource NetworkBandwidth(
+  double amount,
+  const std::string& role) {
   return createResource("network_bandwidth", amount, role);
 }
 
-mesos::Resource Memory(double amount, const std::string& role) {
+mesos::Resource Memory(
+  double amount,
+  const std::string& role) {
   return createResource("mem", amount, role);
 }
 

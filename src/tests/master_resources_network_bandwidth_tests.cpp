@@ -16,9 +16,15 @@
 
 #include <string>
 
+#include "common/resources_utils.hpp"
+
 #include <gmock/gmock.h>
 
+#include <google/protobuf/repeated_field.h>
+
 #include "master/resources/network_bandwidth.hpp"
+
+#include <mesos/resources.hpp>
 
 #include <stout/gtest.hpp>
 
@@ -29,24 +35,34 @@ namespace internal {
 namespace tests {
 
 using std::string;
+
+using google::protobuf::RepeatedPtrField;
+
 using mesos::resources::enforceNetworkBandwidthAllocation;
 
 namespace {
 
 void ASSERT_HAS_NETWORK_BANDWIDTH(
-  const Resources& resources,
+  const RepeatedPtrField<Resource>& resources,
   const Resource& expectedNetworkBandwidth) {
-  Option<Resources> networkBandwidth =
-    resources.find(Resources(expectedNetworkBandwidth));
+  /**
+   * To compare resources we need to use Resources which is only supporting
+   * resources in post-reservation-refinement format. So we need to convert
+   * resources in this format prior to comparison.
+   */
+  RepeatedPtrField<Resource> adaptedResources(resources);
+  convertResourceFormat(
+    &adaptedResources,
+    ResourceFormat::POST_RESERVATION_REFINEMENT);
 
-  if(networkBandwidth.isNone()) {
-    ASSERT_TRUE(false) << "Network bandwidth should be present.";
-  }
-  else {
-    ASSERT_EQ(
-      Resources(networkBandwidth.get()),
-      Resources(expectedNetworkBandwidth));
-  }
+  Resource adaptedExpectedNetworkBandwidth(expectedNetworkBandwidth);
+  convertResourceFormat(
+    &adaptedExpectedNetworkBandwidth,
+    ResourceFormat::POST_RESERVATION_REFINEMENT);
+
+  ASSERT_TRUE(
+    Resources(adaptedResources).contains(adaptedExpectedNetworkBandwidth))
+    << "Network bandwidth should be present.";
 }
 
 } // namespace {
@@ -59,6 +75,11 @@ TEST(MasterResourcesNetworkBandwidthTest, ConsumeDeclaredNetworkBandwidth) {
   TaskInfo* taskInfo = operation.mutable_launch()->add_task_infos();
   Resources totalSlaveResources;
 
+  totalSlaveResources += resources::CPU(4);
+
+  // Add 1 CPU.
+  taskInfo->mutable_resources()->Add()->CopyFrom(
+    resources::CPU(1));
   // Add 30Mbps of network bandwidth to the task.
   taskInfo->mutable_resources()->Add()->CopyFrom(
     resources::NetworkBandwidth(30));
