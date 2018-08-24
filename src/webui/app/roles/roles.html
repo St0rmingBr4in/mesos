@@ -17,19 +17,23 @@
       <th data-key="resources.cpus" class="group-column" colspan="4">Allocation</th>
       <th data-key="resources.gpus" class="group-column" colspan="4">Guarantee</th>
       <th data-key="resources.mem" class="group-column" colspan="4">Limit</th>
+      <th data-key="resources.network_bandwidth" class="group-column" colspan="4">Limit</th>
     </tr>
     <tr>
       <th data-key="resources.cpus" class="begin-group-column">CPU</th>
       <th data-key="resources.gpus">GPU</th>
       <th data-key="resources.mem">Mem</th>
+      <th data-key="resources.mem">NetworkBandwidth</th>
       <th data-key="resources.disk" class="end-group-column">Disk</th>
       <th data-key="resources.cpus" class="begin-group-column">CPU</th>
       <th data-key="resources.gpus">GPU</th>
       <th data-key="resources.mem">Mem</th>
+      <th data-key="resources.mem">NetworkBandwidth</th>
       <th data-key="resources.disk" class="end-group-column">Disk</th>
       <th data-key="resources.cpus" class="begin-group-column">CPU</th>
       <th data-key="resources.gpus">GPU</th>
       <th data-key="resources.mem">Mem</th>
+      <th data-key="resources.mem">NetworkBandwidth</th>
       <th data-key="resources.disk" class="end-group-column">Disk</th>
     </tr>
   </thead>
@@ -41,11 +45,13 @@
       <td class="begin-group-column">{{role.resources.cpus | decimalFloat}}</td>
       <td>{{role.resources.gpus | decimalFloat}}</td>
       <td>{{role.resources.mem * (1024 * 1024) | dataSize}}</td>
+      <td>{{role.resources.network_bandwidth | bandwidth}}</td>
       <td class="end-group-column">{{role.resources.disk * (1024 * 1024) | dataSize}}</td>
 
       <td class="begin-group-column">{{(role.quota.guarantee.cpus | decimalFloat) || "-"}}</td>
       <td>{{(role.quota.guarantee.gpus | decimalFloat) || "-"}}</td>
       <td>{{(role.quota.guarantee.mem * (1024 * 1024) | dataSize) || "-"}}</td>
+      <td>{{(role.quota.guarantee.network_bandwidth | 0) || "-"}}</td>
       <td class="end-group-column">{{(role.quota.guarantee.disk * (1024 * 1024) | dataSize) || "-"}}</td>
 
       <!-- TODO(ArmandGrillet): Replace by
@@ -54,6 +60,7 @@
       <td class="begin-group-column">{{(role.quota.guarantee.cpus | decimalFloat) || "-"}}</td>
       <td>{{(role.quota.guarantee.gpus | decimalFloat) || "-"}}</td>
       <td>{{(role.quota.guarantee.mem * (1024 * 1024) | dataSize) || "-"}}</td>
+      <td>{{(role.quota.guarantee.network_bandwidth | 0) || "-"}}</td>
       <td class="end-group-column">{{(role.quota.guarantee.disk * (1024 * 1024) | dataSize) || "-"}}</td>
     </tr>
   </tbody>

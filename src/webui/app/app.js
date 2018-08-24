@@ -157,6 +157,21 @@
         return num ? parseFloat(num.toFixed(4)).toString() : num;
       }
     })
+    .filter('bandwidth', function() {
+      return function(num) {
+        var rounded_num = num ? parseFloat(num.toFixed(4)).toString() : 0
+        return '' + rounded_num + ' Mbps';
+      }
+    })
+    .filter('bandwidthEmpty', function() {
+      return function(num) {
+        if (num) {
+          var rounded_num = parseFloat(num.toFixed(4)).toString();
+          return '' + rounded_num + ' Mbps';
+        }
+        return '';
+      }
+    })
     .filter('dataSize', function() {
       var BYTES_PER_KB = Math.pow(2, 10);
       var BYTES_PER_MB = Math.pow(2, 20);

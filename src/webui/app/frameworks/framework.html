@@ -133,6 +133,15 @@
               {{framework.offered_resources.mem * (1024 * 1024) | dataSize}}
             </td>
           </tr>
+          <tr>
+            <td>Network</td>
+            <td class="text-right">
+              {{framework.used_resources.network_bandwidth | bandwidth}}
+            </td>
+            <td class="text-right">
+              {{framework.offered_resources.network_bandwidth | bandwidth}}
+            </td>
+          </tr>
         </tbody>
       </table>
     </div>

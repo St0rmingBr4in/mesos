@@ -17,6 +17,7 @@
       <th data-key="resources.gpus">GPUs (Allocated / Total)</th>
       <th data-key="resources.mem">Mem (Allocated / Total)</th>
       <th data-key="resources.disk">Disk (Allocated / Total)</th>
+      <th data-key="resources.network_bandwidth">Network (Allocated / Total)</th>
       <th data-key="registered_time">Registered</th>
       <th data-key="reregistered_time">Re-Registered</th>
     </tr>
@@ -45,6 +46,9 @@
     </td>
     <td>
       {{agent.used_resources.disk * (1024 * 1024) | dataSize}} / {{agent.resources.disk * (1024 * 1024) | dataSize}}
+    </td>
+    <td>
+      {{agent.used_resources.network_bandwidth | bandwidth}} / {{agent.resources.network_bandwidth | bandwidth}}
     </td>
     <td>
       <m-timestamp value="{{agent.registered_time * 1000}}"></m-timestamp>

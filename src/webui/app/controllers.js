@@ -184,14 +184,17 @@
     $scope.total_gpus = 0;
     $scope.total_mem = 0;
     $scope.total_disk = 0;
+    $scope.total_network_bandwidth = 0;
     $scope.used_cpus = 0;
     $scope.used_gpus = 0;
     $scope.used_mem = 0;
     $scope.used_disk = 0;
+    $scope.used_network_bandwidth = 0;
     $scope.offered_cpus = 0;
     $scope.offered_gpus = 0;
     $scope.offered_mem = 0;
     $scope.offered_disk = 0;
+    $scope.offered_network_bandwidth = 0;
 
     $scope.activated_agents = $scope.state.activated_slaves;
     $scope.deactivated_agents = $scope.state.deactivated_slaves;
@@ -203,6 +206,7 @@
       $scope.total_gpus += agent.resources.gpus;
       $scope.total_mem += agent.resources.mem;
       $scope.total_disk += agent.resources.disk;
+      $scope.total_network_bandwidth += agent.resources.network_bandwidth;
     });
 
     var setTaskMetadata = function(task) {
@@ -250,6 +254,7 @@
         $scope.offered_gpus += offer.resources.gpus;
         $scope.offered_mem += offer.resources.mem;
         $scope.offered_disk += offer.resources.disk;
+        $scope.offered_network_bandwidth += offer.resources.network_bandwidth;
         offer.framework_name = $scope.frameworks[offer.framework_id].name;
         offer.hostname = $scope.agents[offer.slave_id].hostname;
       });
@@ -258,6 +263,7 @@
       $scope.used_gpus += framework.resources.gpus;
       $scope.used_mem += framework.resources.mem;
       $scope.used_disk += framework.resources.disk;
+      $scope.used_network_bandwidth += framework.resources.network_bandwidth;
 
       framework.cpus_share = 0;
       if ($scope.total_cpus > 0) {
@@ -279,11 +285,17 @@
         framework.disk_share = framework.used_resources.disk / $scope.total_disk;
       }
 
+      framework.network_bandwidth_share = 0;
+      if ($scope.total_network_bandwidth > 0) {
+        framework.network_bandwidth_share = framework.used_resources.network_bandwidth / $scope.total_network_bandwidth;
+      }
+
       framework.max_share = Math.max(
           framework.cpus_share,
           framework.gpus_share,
           framework.mem_share,
-          framework.disk_share);
+          framework.disk_share,
+          framework.network_bandwidth_share);
 
       // If the executor ID is empty, this is a command executor with an
       // internal executor ID generated from the task ID.
@@ -346,11 +358,13 @@
     $scope.used_gpus -= $scope.offered_gpus;
     $scope.used_mem -= $scope.offered_mem;
     $scope.used_disk -= $scope.offered_disk;
+    $scope.used_network_bandwidth -= $scope.offered_network_bandwidth;
 
     $scope.idle_cpus = $scope.total_cpus - ($scope.offered_cpus + $scope.used_cpus);
     $scope.idle_gpus = $scope.total_gpus - ($scope.offered_gpus + $scope.used_gpus);
     $scope.idle_mem = $scope.total_mem - ($scope.offered_mem + $scope.used_mem);
     $scope.idle_disk = $scope.total_disk - ($scope.offered_disk + $scope.used_disk);
+    $scope.idle_network_bandwidth = $scope.total_network_bandwidth - ($scope.offered_network_bandwidth + $scope.used_network_bandwidth);
 
     $scope.time_since_update = 0;
     $scope.$broadcast('state_updated');
@@ -739,6 +753,7 @@
             framework.gpus = 0;
             framework.mem = 0;
             framework.disk = 0;
+            framework.network_bandwidth = 0;
 
             _.each(framework.executors, function(executor) {
               framework.num_tasks += _.size(executor.tasks);
@@ -746,6 +761,7 @@
               framework.gpus += executor.resources.gpus;
               framework.mem += executor.resources.mem;
               framework.disk += executor.resources.disk;
+              framework.network_bandwidth += executor.resources.network_bandwidth;
             });
           }
 
@@ -776,6 +792,7 @@
           $scope.state.allocated_resources.gpus = 0;
           $scope.state.allocated_resources.mem = 0;
           $scope.state.allocated_resources.disk = 0;
+          $scope.state.allocated_resources.network_bandwidth = 0;
 
           // Currently the agent does not expose the total allocated
           // resources across all frameworks, so we sum manually.
@@ -784,6 +801,7 @@
             $scope.state.allocated_resources.gpus += framework.gpus;
             $scope.state.allocated_resources.mem += framework.mem;
             $scope.state.allocated_resources.disk += framework.disk;
+            $scope.state.allocated_resources.network_bandwidth += framework.network_bandwidth;
           });
 
           $('#agent').show();
@@ -874,6 +892,7 @@
           $scope.framework.gpus = 0;
           $scope.framework.mem = 0;
           $scope.framework.disk = 0;
+          $scope.framework.network_bandwidth = 0;
 
           _.each($scope.framework.executors, function(executor) {
             $scope.framework.num_tasks += _.size(executor.tasks);
@@ -881,6 +900,7 @@
             $scope.framework.gpus += executor.resources.gpus;
             $scope.framework.mem += executor.resources.mem;
             $scope.framework.disk += executor.resources.disk;
+            $scope.framework.network_bandwidth += executor.resources.network_bandwidth;
 
             // If 'role' is not present in executor, we are talking
             // to a non-MULTI_ROLE capable agent. This means that we

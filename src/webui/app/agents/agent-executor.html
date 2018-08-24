@@ -96,6 +96,13 @@
               {{(executor.resources.disk || 0) * (1024 * 1024) | dataSize}}
             </td>
           </tr>
+          <tr>
+            <td>Network</td>
+            <td class="text-right">
+              N/A
+            </td>
+            <td class="text-right">{{executor.resources.network_bandwidth | bandwidthEmpty}}</td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -113,6 +120,7 @@
           <th data-key="resources.gpus">GPUs</th>
           <th data-key="resources.mem">Mem</th>
           <th data-key="resources.disk">Disk</th>
+          <th data-key="resources.network_bandwidth">Network</th>
         </tr>
       </thead>
       <tbody>
@@ -124,6 +132,7 @@
           <td>{{queued_task.resources.gpus | number}}</td>
           <td>{{queued_task.resources.mem * (1024 * 1024) | dataSize}}</td>
           <td>{{queued_task.resources.disk * (1024 * 1024) | dataSize}}</td>
+          <td>{{queued_task.resources.network_bandwidth | bandwidth}}</td>
         </tr>
       </tbody>
     </table>
@@ -141,6 +150,7 @@
           <th data-key="resources.gpus">GPUs (allocated)</th>
           <th data-key="resources.mem">Mem (allocated)</th>
           <th data-key="resources.disk">Disk (allocated)</th>
+          <th data-key="resources.network_bandwidth">Network (allocated)</th>
           <th></th>
         </tr>
       </thead>
@@ -155,6 +165,7 @@
           <td>{{task.resources.gpus | number}}</td>
           <td>{{task.resources.mem * (1024 * 1024) | dataSize}}</td>
           <td>{{task.resources.disk * (1024 * 1024) | dataSize}}</td>
+          <td>{{task.resources.network_bandwidth | bandwidth}}</td>
           <td>
             <a href="{{'#/agents/' + agent_id + '/browse?path=' +
                        encodeURIComponent(task.directory)}}">
@@ -177,6 +188,7 @@
           <th data-key="resources.gpus">GPUs (allocated)</th>
           <th data-key="resources.mem">Mem (allocated)</th>
           <th data-key="resources.disk">Disk (allocated)</th>
+          <th data-key="resources.network_bandwidth">Network (allocated)</th>
           <th></th>
         </tr>
       </thead>
@@ -190,6 +202,7 @@
           <td>{{completed_task.resources.gpus | number}}</td>
           <td>{{completed_task.resources.mem * (1024 * 1024) | dataSize}}</td>
           <td>{{completed_task.resources.disk * (1024 * 1024) | dataSize}}</td>
+          <td>{{completed_task.resources.network_bandwidth | bandwidth}}</td>
           <td>
             <a href="{{'#/agents/' + agent_id + '/browse?path=' +
                        encodeURIComponent(completed_task.directory)}}">

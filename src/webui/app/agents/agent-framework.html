@@ -76,6 +76,13 @@
               {{(framework.disk || 0) * (1024 * 1024) | dataSize}}
             </td>
           </tr>
+          <tr>
+            <td>Network</td>
+            <td class="text-right">
+              N/A
+            </td>
+            <td class="text-right">{{framework.network_bandwidth | bandwidthEmpty}}</td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -96,6 +103,7 @@
           <th data-key="resources.gpus">GPUs (Used / Allocated)</th>
           <th data-key="resources.mem">Mem (Used / Allocated)</th>
           <th data-key="resources.disk">Disk (Used / Allocated)</th>
+          <th data-key="resources.network_bandwidth">Network (Used / Allocated)</th>
           <th></th>
         </tr>
       </thead>
@@ -119,6 +127,8 @@
               {{executor.resources.mem * (1024 * 1024) | dataSize}}</td>
           <td>{{monitor.frameworks[framework.id].executors[executor.id].statistics.disk_used_bytes | dataSize}} /
               {{executor.resources.disk * (1024 * 1024) | dataSize}}</td>
+          <!-- TODO(clems4ever): We need to expose statistics through isolator interface. -->
+          <td>N/A</td>
           <td>
             <a href="{{'#/agents/' + agent_id + '/browse?path=' +
                        encodeURIComponent(executor.directory)}}">

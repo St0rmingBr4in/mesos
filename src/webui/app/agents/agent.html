@@ -166,6 +166,21 @@
               {{state.resources.disk * (1024 * 1024) | dataSize}}
             </td>
           </tr>
+          <tr>
+            <td>Network</td>
+            <td class="text-right">
+              N/A
+            </td>
+            <td class="text-right">
+              {{state.allocated_resources.network_bandwidth | bandwidthEmpty}}
+            </td>
+            <td class="text-right">
+              {{state.resources.network_bandwidth - state.allocated_resources.network_bandwidth | bandwidth}}
+            </td>
+            <td class="text-right">
+              {{state.resources.network_bandwidth | bandwidthEmpty}}
+            </td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -217,6 +232,7 @@
           <th data-key="gpus">GPUs (Allocated / Total)</th>
           <th data-key="mem">Mem (Allocated / Total)</th>
           <th data-key="disk">Disk (Allocated / Total)</th>
+          <th data-key="network_bandwidth">Network (Allocated / Total)</th>
         </tr>
       </thead>
       <tbody>
@@ -226,6 +242,7 @@
           <td>{{state.unreserved_resources_allocated.gpus | number}} / {{state.unreserved_resources.gpus | number}}</td>
           <td>{{state.unreserved_resources_allocated.mem * (1024 * 1024) | dataSize}} / {{state.unreserved_resources.mem * (1024 * 1024) | dataSize}}</td>
           <td>{{state.unreserved_resources_allocated.disk * (1024 * 1024) | dataSize}} / {{state.unreserved_resources.disk * (1024 * 1024) | dataSize}}</td>
+          <td>{{state.unreserved_resources_allocated.network_bandwidth | bandwidth}} / {{state.unreserved_resources.network_bandwidth | bandwidth}}</td>
         </tr>
         <tr ng-repeat="reservation in $data">
           <td>{{reservation.role}}</td>
@@ -233,6 +250,7 @@
           <td>{{(state.reserved_resources_allocated[reservation.role].gpus || 0) | number}} / {{reservation.gpus | number}}</td>
           <td>{{(state.reserved_resources_allocated[reservation.role].mem * (1024 * 1024) || 0) | dataSize}} / {{reservation.mem * (1024 * 1024) | dataSize}}</td>
           <td>{{(state.reserved_resources_allocated[reservation.role].disk * (1024 * 1024) || 0) | dataSize}} / {{reservation.disk * (1024 * 1024) | dataSize}}</td>
+          <td>{{(state.reserved_resources_allocated[reservation.role].network_bandwidth || 0) | bandwidth}} / {{reservation.network_bandwidth | bandwidth}}</td>
         </tr>
       </tbody>
     </table>
@@ -250,6 +268,7 @@
           <th data-key="gpus">GPUs (Used / Allocated)</th>
           <th data-key="mem">Mem (Used / Allocated)</th>
           <th data-key="disk">Disk (Used / Allocated)</th>
+          <th data-key="network_bandwidth">Network (Used / Allocated)</th>
         </tr>
       </thead>
       <tbody>
@@ -278,6 +297,7 @@
           <td>N/A</td>
           <td>{{monitor.frameworks[framework.id].statistics.mem_rss_bytes | dataSize}} / {{framework.mem * (1024 * 1024) | dataSize}}</td>
           <td>{{monitor.frameworks[framework.id].statistics.disk_used_bytes | dataSize}} / {{framework.disk * (1024 * 1024) | dataSize}}</td>
+          <td>N/A</td> <!-- TODO(clems4ever): We need to expose statistics for network bandwidth in isolator. -->
         </tr>
       </tbody>
     </table>
@@ -295,6 +315,7 @@
           <th data-key="resources.gpus">GPUs</th>
           <th data-key="resources.mem">Mem</th>
           <th data-key="resources.disk">Disk</th>
+          <th data-key="resources.network_bandwidth">Network</th>
         </tr>
       </thead>
       <tbody>
@@ -322,6 +343,7 @@
           <td>{{completed_framework.gpus | number}}</td>
           <td>{{completed_framework.mem * (1024 * 1024) | dataSize}}</td>
           <td>{{completed_framework.disk * (1024 * 1024) | dataSize}}</td>
+          <td>{{completed_framework.network_bandwidth | bandwidth}}</td>
         </tr>
       </tbody>
     </table>
