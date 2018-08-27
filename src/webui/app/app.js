@@ -159,15 +159,17 @@
     })
     .filter('bandwidth', function() {
       return function(num) {
-        var rounded_num = num ? parseFloat(num.toFixed(4)).toString() : 0
-        return '' + rounded_num + ' Mbps';
+        var amount = num
+          ? (parseFloat(num) / 1000.0).toFixed(2).toString()
+          : '0';
+        return amount + ' Gbps';
       }
     })
     .filter('bandwidthEmpty', function() {
       return function(num) {
         if (num) {
-          var rounded_num = parseFloat(num.toFixed(4)).toString();
-          return '' + rounded_num + ' Mbps';
+          var amount = (parseFloat(num) / 1000.0).toFixed(2).toString()
+          return amount + ' Gbps';
         }
         return '';
       }

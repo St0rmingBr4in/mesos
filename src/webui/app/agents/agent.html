@@ -242,7 +242,7 @@
           <td>{{state.unreserved_resources_allocated.gpus | number}} / {{state.unreserved_resources.gpus | number}}</td>
           <td>{{state.unreserved_resources_allocated.mem * (1024 * 1024) | dataSize}} / {{state.unreserved_resources.mem * (1024 * 1024) | dataSize}}</td>
           <td>{{state.unreserved_resources_allocated.disk * (1024 * 1024) | dataSize}} / {{state.unreserved_resources.disk * (1024 * 1024) | dataSize}}</td>
-          <td>{{state.unreserved_resources_allocated.network_bandwidth | bandwidth}} / {{state.unreserved_resources.network_bandwidth | bandwidth}}</td>
+          <td>{{state.unreserved_resources_allocated.network_bandwidth | bandwidthEmpty}} / {{state.unreserved_resources.network_bandwidth | bandwidthEmpty}}</td>
         </tr>
         <tr ng-repeat="reservation in $data">
           <td>{{reservation.role}}</td>
@@ -250,7 +250,7 @@
           <td>{{(state.reserved_resources_allocated[reservation.role].gpus || 0) | number}} / {{reservation.gpus | number}}</td>
           <td>{{(state.reserved_resources_allocated[reservation.role].mem * (1024 * 1024) || 0) | dataSize}} / {{reservation.mem * (1024 * 1024) | dataSize}}</td>
           <td>{{(state.reserved_resources_allocated[reservation.role].disk * (1024 * 1024) || 0) | dataSize}} / {{reservation.disk * (1024 * 1024) | dataSize}}</td>
-          <td>{{(state.reserved_resources_allocated[reservation.role].network_bandwidth || 0) | bandwidth}} / {{reservation.network_bandwidth | bandwidth}}</td>
+          <td>{{(state.reserved_resources_allocated[reservation.role].network_bandwidth || 0) | bandwidthEmpty}} / {{reservation.network_bandwidth | bandwidthEmpty}}</td>
         </tr>
       </tbody>
     </table>
