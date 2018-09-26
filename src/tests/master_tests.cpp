@@ -2382,6 +2382,17 @@ TEST_F(MasterTest, MetricsInMetricsEndpoint)
   EXPECT_EQ(1u, snapshot.values.count("master/disk_revocable_used"));
   EXPECT_EQ(1u, snapshot.values.count("master/disk_revocable_percent"));
 
+  EXPECT_EQ(1u, snapshot.values.count("master/network_bandwidth_total"));
+  EXPECT_EQ(1u, snapshot.values.count("master/network_bandwidth_used"));
+  EXPECT_EQ(1u, snapshot.values.count("master/network_bandwidth_percent"));
+
+  EXPECT_EQ(1u, snapshot.values.count(
+      "master/network_bandwidth_revocable_total"));
+  EXPECT_EQ(1u, snapshot.values.count(
+      "master/network_bandwidth_revocable_used"));
+  EXPECT_EQ(1u, snapshot.values.count(
+      "master/network_bandwidth_revocable_percent"));
+
   // Registrar Metrics.
   EXPECT_EQ(1u, snapshot.values.count("registrar/queued_operations"));
   EXPECT_EQ(1u, snapshot.values.count("registrar/registry_size_bytes"));

@@ -130,7 +130,9 @@ Metrics::Metrics(const Slave& slave)
   // Create resource gauges.
   // TODO(dhamon): Set these up dynamically when creating a slave
   // based on the resources it exposes.
-  const string resources[] = {"cpus", "gpus", "mem", "disk"};
+  const string resources[] = {
+    "cpus", "gpus", "mem", "disk", "network_bandwidth"
+  };
 
   foreach (const string& resource, resources) {
     PullGauge total(

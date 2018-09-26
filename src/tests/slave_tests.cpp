@@ -1375,6 +1375,17 @@ TEST_F(SlaveTest, MetricsInMetricsEndpoint)
   EXPECT_EQ(1u, snapshot.values.count("slave/disk_revocable_total"));
   EXPECT_EQ(1u, snapshot.values.count("slave/disk_revocable_used"));
   EXPECT_EQ(1u, snapshot.values.count("slave/disk_revocable_percent"));
+
+  EXPECT_EQ(1u, snapshot.values.count("slave/network_bandwidth_total"));
+  EXPECT_EQ(1u, snapshot.values.count("slave/network_bandwidth_used"));
+  EXPECT_EQ(1u, snapshot.values.count("slave/network_bandwidth_percent"));
+
+  EXPECT_EQ(1u, snapshot.values.count(
+      "slave/network_bandwidth_revocable_total"));
+  EXPECT_EQ(1u, snapshot.values.count(
+      "slave/network_bandwidth_revocable_used"));
+  EXPECT_EQ(1u, snapshot.values.count(
+      "slave/network_bandwidth_revocable_percent"));
 }
 
 
