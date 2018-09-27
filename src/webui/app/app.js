@@ -160,7 +160,7 @@
     .filter('bandwidth', function() {
       return function(num) {
         var amount = num
-          ? (parseFloat(num) / 1000.0).toFixed(2).toString()
+          ? (parseFloat(num) / 1024.0).toFixed(2).toString()
           : '0';
         return amount + ' Gbps';
       }
@@ -168,7 +168,7 @@
     .filter('bandwidthEmpty', function() {
       return function(num) {
         if (num) {
-          var amount = (parseFloat(num) / 1000.0).toFixed(2).toString()
+          var amount = (parseFloat(num) / 1024.0).toFixed(2).toString()
           return amount + ' Gbps';
         }
         return '';
