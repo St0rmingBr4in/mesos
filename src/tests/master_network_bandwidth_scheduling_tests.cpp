@@ -514,6 +514,8 @@ TEST_F(MasterNetworkBandwidthSchedulingTest,
 
   // Make framework subscribe to role 'toto'.
   FrameworkInfo frameworkInfo = DEFAULT_FRAMEWORK_INFO;
+  frameworkInfo.clear_capabilities();
+  frameworkInfo.clear_roles();
   frameworkInfo.set_role("toto");
 
   MockScheduler sched;
