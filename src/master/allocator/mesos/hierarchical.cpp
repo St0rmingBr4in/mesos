@@ -1823,6 +1823,10 @@ void HierarchicalAllocatorProcess::__allocate()
     CHECK(slaves.contains(slaveId));
     Slave& slave = slaves.at(slaveId);
 
+    VLOG(2) << "[Criteo] Here is the sorted list of roles that will be considered to get resources for slave " << slaveId;
+    foreach (const string& role, quotaRoleSorter->sort()) {
+        VLOG(2) << "[CRITEO] - " << role;
+    }
     foreach (const string& role, quotaRoleSorter->sort()) {
       CHECK(quotaGuarantees.contains(role));
 
@@ -1831,12 +1835,14 @@ void HierarchicalAllocatorProcess::__allocate()
       // If there are no active frameworks in this role, we do not
       // need to do any allocations for this role.
       if (!roles.contains(role)) {
+        VLOG(2) << "[CRITEO] " + role + " has no active framework, it will be ignored";
         continue;
       }
 
       // TODO(bmahler): Handle shared volumes, which are always available but
       // should be excluded here based on `offeredSharedResources`.
       if (slave.getAvailable().empty()) {
+        VLOG(2) << "[CRITEO] " << slaveId << " has no resource to offer anymore, skipping";
         break; // Nothing left on this agent.
       }
 
@@ -1847,12 +1853,14 @@ void HierarchicalAllocatorProcess::__allocate()
 
       foreach (const string& frameworkId_, frameworkSorter->sort()) {
         Resources available = slave.getAvailable();
+        VLOG(2) << "[CRITEO] slave " << slaveId << " has following available resources: " << available;
 
         // Offer a shared resource only if it has not been offered in this
         // offer cycle to a framework.
         available -= offeredSharedResources.get(slaveId).getOrElse(Resources());
 
         if (available.allocatableTo(role).empty()) {
+          VLOG(2) << "[CRITEO] " + role + " cannot be allocated any resources on slave " << slaveId << " due to the allocatableTo method";
           break; // Nothing left for the role.
         }
 
@@ -1910,6 +1918,8 @@ void HierarchicalAllocatorProcess::__allocate()
           quotaGuarantee -
           rolesConsumedQuota.get(role).getOrElse(ResourceQuantities());
 
+        VLOG(2) << "[CRITEO] " << role << " has following unsatisfied guarantees " << unsatisfiedQuotaGuarantee;
+
         Resources unreserved = available.nonRevocable().unreserved();
 
         // First, allocate resources up to a role's quota guarantee.
@@ -1924,6 +1934,7 @@ void HierarchicalAllocatorProcess::__allocate()
         // a reservation. Otherwise, this role is not going to get any
         // allocation. We can safely `continue` here.
         if (toAllocate.empty()) {
+          VLOG(2) << "[CRITEO] " + role + " has no reserved resources on that slave and there is no unreserved resources on that slave " << slaveId;
           continue;
         }
 
@@ -1954,6 +1965,7 @@ void HierarchicalAllocatorProcess::__allocate()
         // If the framework filters these resources, ignore.
         if (!allocatable(toAllocate, role, framework) ||
             isFiltered(frameworkId, role, slaveId, toAllocate)) {
+          VLOG(2) << "[CRITEO] " + role + " filters these resources OR offer would be smaller than minAllocatableParameter" << slaveId;
           continue;
         }
 
