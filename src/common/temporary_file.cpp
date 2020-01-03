@@ -1,5 +1,5 @@
 #include "common/temporary_file.hpp"
-#include <cerrno>
+#include <stout/os.hpp>
 
 namespace mesos {
 namespace internal {
@@ -8,12 +8,12 @@ namespace internal {
  * Represent a temporary file that can be either written or read from.
  */
 TemporaryFile::TemporaryFile() {
-  Try<string> filepath = os::mktemp();
+  Try<std::string> filepath = os::mktemp();
   if(filepath.isError()){
     throw std::runtime_error(
-      "Unable to create temporary file to run commands : " + std::strerror(errno));
+      "Unable to create temporary file to run commands : " + filepath.error());
   }
-  m_filepath = filepath.get()
+  m_filepath = filepath.get();
 }
 
 /*
@@ -22,15 +22,16 @@ TemporaryFile::TemporaryFile() {
  */
 std::string TemporaryFile::readAll() const {
   std::ifstream ifs;
+  std::string content;
   ifs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
   try {
     ifs.open(m_filepath);
-    std::string content((std::istreambuf_iterator<char>(ifs)),
+    content = std::string((std::istreambuf_iterator<char>(ifs)),
                         (std::istreambuf_iterator<char>()));
     ifs.close();
   }
   catch(std::ifstream::failure &e) {
-    throw std::runtime_error("Exception while accessing temporary file : " + std::strerror(errno));
+    throw std::runtime_error("Exception while accessing temporary file : " + std::string(e.what()));
   }
   return content;
 }
@@ -48,11 +49,11 @@ void TemporaryFile::write(const std::string& content) const {
     ofs.close();
   }
   catch(std::ofstream::failure &e) {
-    throw std::runtime_error("Exception while accessing temporary file : " + std::strerror(errno));
+    throw std::runtime_error("Exception while accessing temporary file : " + std::string(e.what()));
   }
 }
 
-friend std::ostream& TemporaryFile::operator<<(std::ostream& out, const TemporaryFile& temp_file) {
+std::ostream& operator<<(std::ostream& out, const TemporaryFile& temp_file) {
   out << temp_file.m_filepath;
   return out;
 }

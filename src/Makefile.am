@@ -1080,6 +1080,8 @@ libmesos_no_3rdparty_la_SOURCES +=					\
   common/resources_utils.hpp						\
   common/roles.cpp							\
   common/status_utils.hpp						\
+  common/temporary_file.cpp            \
+  common/temporary_file.hpp	           \
   common/type_utils.cpp							\
   common/validation.cpp							\
   common/validation.hpp							\
