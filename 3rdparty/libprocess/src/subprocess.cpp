@@ -71,6 +71,16 @@ Subprocess::ChildHook::ChildHook(
     const lambda::function<Try<Nothing>()>& _child_setup)
   : child_setup(_child_setup) {}
 
+Subprocess::ParentHook Subprocess::ParentHook::EXEC(
+  const std::string& cmdstr, const std::string& json)
+{
+  return Subprocess::ParentHook([cmdstr, json](pid_t pid) -> Try<Nothing> {
+      std::system((cmdstr + " " + std::to_string(pid) + " " + json).c_str());
+      return Nothing();
+    }
+  );
+}
+
 
 Subprocess::ChildHook Subprocess::ChildHook::CHDIR(
     const std::string& working_directory)
