@@ -550,8 +550,8 @@ protected:
       childHooks.emplace_back(Subprocess::ChildHook::SETSID());
     }
 
+    TemporaryFile inputFile;
     if(hook.isSome()) {
-      TemporaryFile inputFile;
       JSON::Object inputsJson;
       inputsJson.values["launch_info"] = JSON::protobuf(launchInfo);
       inputFile.write(stringify(inputsJson));

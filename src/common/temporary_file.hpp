@@ -14,6 +14,7 @@ namespace internal {
 class TemporaryFile {
  public:
   TemporaryFile();
+  ~TemporaryFile();
   std::string readAll() const ;
   void write(const std::string& content) const;
   inline const std::string& filepath() const { return m_filepath; }

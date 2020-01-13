@@ -16,6 +16,10 @@ TemporaryFile::TemporaryFile() {
   m_filepath = filepath.get();
 }
 
+TemporaryFile::~TemporaryFile() {
+  os::rm(m_filepath);
+}
+
 /*
  * Read whole content of the temporary file.
  * @return The content of the file.
