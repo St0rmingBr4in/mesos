@@ -70,14 +70,11 @@ AM_CONDITIONAL([STANDALONE_STOUT], [false])
 AC_CONFIG_FILES([Makefile mesos.pc])
 AC_CONFIG_FILES([src/Makefile])
 AC_CONFIG_FILES([3rdparty/Makefile])
-
-# For autoreconf & ./configure of libprocess. This is needed to have --enable-gperftools  passed to libprocess Makefile
-AC_CONFIG_SUBDIRS([3rdparty/libprocess])
-
+AC_CONFIG_FILES([3rdparty/libprocess/Makefile])
+AC_CONFIG_FILES([3rdparty/libprocess/include/Makefile])
 AC_CONFIG_FILES([3rdparty/stout/Makefile])
 AC_CONFIG_FILES([3rdparty/stout/include/Makefile])
 AC_CONFIG_FILES([3rdparty/gmock_sources.cc])
-
 
 AC_CONFIG_FILES(
   [bin/mesos.sh],
@@ -827,6 +824,7 @@ AM_CONDITIONAL([OS_LINUX], [test "x$OS_NAME" = "xlinux"])
 AM_CONDITIONAL([OS_FREEBSD], [test "x$OS_NAME" = "xfreebsd"])
 
 AM_CONDITIONAL([HAS_GPERFTOOLS], [test "x$enable_perftools" = "xyes"])
+AM_COND_IF([HAS_GPERFTOOLS], AC_DEFINE([ENABLE_GPERFTOOLS], [1]))
 
 AM_CONDITIONAL([INSTALL_MODULE_DEPENDENCIES],
                [test x"$enable_install_module_dependencies" = "xyes"])
