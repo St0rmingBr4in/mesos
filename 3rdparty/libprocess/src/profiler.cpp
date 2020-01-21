@@ -34,6 +34,7 @@ namespace process {
 namespace {
 constexpr char PROFILE_FILE[] = "perftools.out";
 } // namespace {
+bool started;
 #endif
 
 const std::string Profiler::START_HELP()
