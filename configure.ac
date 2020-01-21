@@ -70,11 +70,14 @@ AM_CONDITIONAL([STANDALONE_STOUT], [false])
 AC_CONFIG_FILES([Makefile mesos.pc])
 AC_CONFIG_FILES([src/Makefile])
 AC_CONFIG_FILES([3rdparty/Makefile])
-AC_CONFIG_FILES([3rdparty/libprocess/Makefile])
-AC_CONFIG_FILES([3rdparty/libprocess/include/Makefile])
+
+# For autoreconf & ./configure of libprocess. This is needed to have --enable-gperftools  passed to libprocess Makefile
+AC_CONFIG_SUBDIRS([3rdparty/libprocess])
+
 AC_CONFIG_FILES([3rdparty/stout/Makefile])
 AC_CONFIG_FILES([3rdparty/stout/include/Makefile])
 AC_CONFIG_FILES([3rdparty/gmock_sources.cc])
+
 
 AC_CONFIG_FILES(
   [bin/mesos.sh],
