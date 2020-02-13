@@ -1,0 +1,22 @@
+---
+name: Docker Image CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build the Docker image
+        run: curl https://raw.githubusercontent.com/criteo/mesosbuild/master/Dockerfile.automake |
+          docker build .
+          --file -
+          --tag mesosbuild:"$GITHUB_SHA"
+          --build-arg CONFIGURE_EXTRA_FLAGS="--enable-test-only-regression"
+      - name: Test mesos
+        run: docker run
+          -e GTEST_FILTER='-EnvironmentSecretIsolatorTest.*:ExamplesTest.DiskFullFramework:ContainerizerTest.ROOT_CGROUPS_BalloonFramework:ResourceOffersTest.ResourceOfferWithMultipleSlaves'
+          mesosbuild:"$GITHUB_SHA"
+          make check -j $(nproc)
