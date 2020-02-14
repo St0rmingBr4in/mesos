@@ -335,6 +335,11 @@ AC_ARG_ENABLE([parallel_test_execution],
                              [disable the parallel runner used during make check]),
               [], [enable_parallel_test_execution=yes])
 
+AC_ARG_ENABLE([test_only_regression],
+              AS_HELP_STRING([--disable-test-only-regression],
+                             [disable the regression tests used during make check]),
+              [], [enable_test_only_regression=yes])
+
 AC_ARG_ENABLE([perftools],
               AS_HELP_STRING([--enable-perftools],
                              [enable Google perftools]),
@@ -840,6 +845,10 @@ AS_IF([test x"$enable_tests_install" = "xyes"],
 AS_IF([test "x$enable_parallel_test_execution" = "xyes"],
       [AC_SUBST([TEST_DRIVER],
        '${abs_top_srcdir}/support/mesos-gtest-runner.py'[' --sequential='*ROOT_*'']]))
+
+AS_IF([test "x$enable_test_only_regression" = "xyes"],
+      [AC_SUBST([TEST_DRIVER],
+       '${abs_top_srcdir}/support/test-regression.py'[' ${abs_top_srcdir}']]))
 
 # Define `WERROR` if the use of `-Werror` was not disabled, leave
 # unset otherwise. An unset variable evaluates to an empty string
