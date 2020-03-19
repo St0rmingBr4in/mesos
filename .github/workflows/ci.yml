@@ -6,7 +6,6 @@ on: [push, pull_request]
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v2
       - name: Build the Docker image
@@ -20,3 +19,12 @@ jobs:
           -e GTEST_FILTER='-EnvironmentSecretIsolatorTest.*:ExamplesTest.DiskFullFramework:ContainerizerTest.ROOT_CGROUPS_BalloonFramework:ResourceOffersTest.ResourceOfferWithMultipleSlaves'
           mesosbuild:"$GITHUB_SHA"
           make check -j $(nproc)
+      - name: Save the build in tarball
+        run: |
+          id=$(docker create mesosbuild:"$GITHUB_SHA")
+          docker cp $id:/src/mesos - | gzip > mesos-built-${{ github.sha }}.tar.gz
+      - name: Upload the built tarball
+        uses: actions/upload-artifact@v1
+        with:
+          name: mesos-built-${{ github.sha }}
+          path: mesos-built-${{ github.sha }}.tar.gz
