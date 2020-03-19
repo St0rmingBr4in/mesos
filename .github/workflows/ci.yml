@@ -6,7 +6,6 @@ on: [push, pull_request]
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v2
       - name: Build the Docker image
@@ -14,9 +13,48 @@ jobs:
           docker build .
           --file -
           --tag mesosbuild:"$GITHUB_SHA"
+          --target builder
           --build-arg CONFIGURE_EXTRA_FLAGS="--enable-test-only-regression"
-      - name: Test mesos
-        run: docker run
-          -e GTEST_FILTER='-EnvironmentSecretIsolatorTest.*:ExamplesTest.DiskFullFramework:ContainerizerTest.ROOT_CGROUPS_BalloonFramework:ResourceOffersTest.ResourceOfferWithMultipleSlaves'
-          mesosbuild:"$GITHUB_SHA"
-          make check -j $(nproc)
+      #- name: Test mesos
+      #  run: docker run
+      #    -e GTEST_FILTER='-EnvironmentSecretIsolatorTest.*:ExamplesTest.DiskFullFramework:ContainerizerTest.ROOT_CGROUPS_BalloonFramework:ResourceOffersTest.ResourceOfferWithMultipleSlaves'
+      #    mesosbuild:"$GITHUB_SHA"
+      #    make check -j $(nproc)
+      - name: Save the build in tarball
+        run: |
+          id=$(docker create mesosbuild:"$GITHUB_SHA")
+          docker cp $id:/src/mesos - | gzip > mesos-built-${{ github.sha }}.tar.gz
+      - name: Upload the built tarball
+        uses: actions/upload-artifact@v1
+        with:
+          name: mesos-built-${{ github.sha }}.tar.gz
+          path: mesos-built-${{ github.sha }}.tar.gz
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download mesos-build
+        uses: actions/download-artifact@v1
+        with:
+          name: mesos-built-${{ github.sha }}.tar.gz
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+      - name: Upload release Asset
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./mesos-built-${{ github.sha }}.tar.gz
+          asset_name: mesos-built-${{ github.ref }}.tar.gz
+          asset_content_type: application/tar+gzip
