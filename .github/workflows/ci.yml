@@ -7,13 +7,16 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Get artifacts
-        id: artifacts
-        run: echo ::set-output name=NEEDED::$(curl -s -L api.github.com/repos/${{ github.repository }}/actions/artifacts | jq -r '.artifacts[].name' | grep -q mesos-built-${{ github.sha }} && echo false || echo true)
+      - name: Cache build
+        id: cache
+        uses: actions/cache@v1
+        with:
+          path: mesos-built-${{ github.sha }}.tar.gz
+          key: mesos-built-${{ github.sha }}
       - uses: actions/checkout@v2
-        if: contains(steps.artifacts.outputs.NEEDED, 'true')
+        if: steps.cache-primes.outputs.cache-hit != 'true'
       - name: Build the Docker image
-        if: contains(steps.artifacts.outputs.NEEDED, 'true')
+        if: steps.cache-primes.outputs.cache-hit != 'true'
         run: curl https://raw.githubusercontent.com/criteo/mesosbuild/master/Dockerfile.automake |
           docker build .
           --file -
@@ -21,18 +24,17 @@ jobs:
           --target builder
           --build-arg CONFIGURE_EXTRA_FLAGS="--enable-test-only-regression"
       #- name: Test mesos
-      #  if: contains(steps.artifacts.outputs.NEEDED, 'true')
+      #  if: steps.cache-primes.outputs.cache-hit != 'true'
       #  run: docker run
       #    -e GTEST_FILTER='-EnvironmentSecretIsolatorTest.*:ExamplesTest.DiskFullFramework:ContainerizerTest.ROOT_CGROUPS_BalloonFramework:ResourceOffersTest.ResourceOfferWithMultipleSlaves'
       #    mesosbuild:"$GITHUB_SHA"
       #    make check -j $(nproc)
       - name: Save the build in tarball
-        if: contains(steps.artifacts.outputs.NEEDED, 'true')
+        if: steps.cache-primes.outputs.cache-hit != 'true'
         run: |
           id=$(docker create mesosbuild:"$GITHUB_SHA")
           docker cp $id:/src/mesos - | gzip > mesos-built-${{ github.sha }}.tar.gz
       - name: Upload the built tarball
-        if: contains(steps.artifacts.outputs.NEEDED, 'true')
         uses: actions/upload-artifact@v1
         with:
           name: mesos-built-${{ github.sha }}
