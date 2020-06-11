@@ -8,57 +8,69 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Cache build
-        id: cache
-        uses: actions/cache@v1
-        with:
-          path: ./build
-          key: mesos-built-${{ github.sha }}
+
+      - name: Fetch all history for all tags and branches
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: git fetch --prune --unshallow
+
       - name: Build the Docker image
-        if: steps.cache.outputs.cache-hit != 'true'
         run: docker build .
           --file docker/Dockerfile
           --tag mesosbuild:"$GITHUB_SHA"
           --build-arg CONFIGURE_EXTRA_FLAGS="--enable-test-only-regression"
+
       - name: Save the build in tarball
-        if: steps.cache.outputs.cache-hit != 'true'
         run: |
           mkdir -p build
           id=$(docker create mesosbuild:"$GITHUB_SHA")
           docker cp $id:/src/mesos - | gzip > build/mesos-built-${{ github.sha }}.tar.gz
+
       - name: Upload the built tarball
         uses: actions/upload-artifact@v1
         with:
           name: mesos-built-${{ github.sha }}
           path: build/mesos-built-${{ github.sha }}.tar.gz
+
       - name: Test mesos
-        if: steps.cache.outputs.cache-hit != 'true'
         run: docker run
           -e GTEST_FILTER='-EnvironmentSecretIsolatorTest.*:ExamplesTest.DiskFullFramework:ContainerizerTest.ROOT_CGROUPS_BalloonFramework:ResourceOffersTest.ResourceOfferWithMultipleSlaves'
           mesosbuild:"$GITHUB_SHA"
           make check -j $(nproc)
-  release:
-    if: startsWith(github.ref, 'refs/tags/')
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Get the version
-        id: get_version
-        run: echo ::set-output name=VERSION::$(echo $GITHUB_REF | cut -d / -f3- | tr '/' '_')
-      - name: Download mesos-build
-        uses: actions/download-artifact@v1
-        with:
-          name: mesos-built-${{ github.sha }}
+
+      - name: Check branch name
+        id: check-branch
+        shell: bash
+        run: |
+          if [[ ${GITHUB_REF#refs/heads/} =~ ^criteo/[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo ::set-output name=match::true
+          fi
+
+      - name: Get next version
+        id: get_next_version
+        run: echo ::set-output name=NEXT_VERSION::$(echo $(git describe --tags --abbrev=0) | awk '{ match($0, /(.*?[^0-9])([0-9]+)$/, v); print v[1] v[2] + 1}')
+        if: steps.check-branch.outputs.match == 'true'
+
+      - name: Push tag
+        uses: anothrNick/github-tag-action@1.23.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CUSTOM_TAG: ${{ steps.get_next_version.outputs.NEXT_VERSION }}
+          RELEASE_BRANCHES: criteo/*
+          TAG_CONTEXT: branch
+
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
+          tag_name: ${{ steps.get_next_version.outputs.NEXT_VERSION }}
+          release_name: Release ${{ steps.get_next_version.outputs.NEXT_VERSION }}
           draft: false
           prerelease: false
+        if: steps.check-branch.outputs.match == 'true'
+
       - name: Upload release Asset
         id: upload-release-asset
         uses: actions/upload-release-asset@v1
@@ -66,6 +78,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: mesos-built-${{ github.sha }}/mesos-built-${{ github.sha }}.tar.gz
-          asset_name: mesos-built-${{ steps.get_version.outputs.VERSION }}.tar.gz
+          asset_path: build/mesos-built-${{ github.sha }}.tar.gz
+          asset_name: mesos-built-${{ steps.get_next_version.outputs.NEXT_VERSION }}.tar.gz
           asset_content_type: application/tar+gzip
+        if: steps.check-branch.outputs.match == 'true'
