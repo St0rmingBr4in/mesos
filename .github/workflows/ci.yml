@@ -13,7 +13,7 @@ jobs:
         run: docker build .
           --file docker/Dockerfile
           --tag mesosbuild:"$GITHUB_SHA"
-          --build-arg CONFIGURE_EXTRA_FLAGS="--enable-test-only-regression"
+          --build-arg CONFIGURE_EXTRA_FLAGS="--enable-test-only-regression" --target=builder
 
       - name: Save the build in tarball
         run: |
@@ -21,17 +21,17 @@ jobs:
           id=$(docker create mesosbuild:"$GITHUB_SHA")
           docker cp $id:/src/mesos - | gzip > build/mesos-built-${{ github.sha }}.tar.gz
 
-      - name: Upload the built tarball
-        uses: actions/upload-artifact@v1
-        with:
-          name: mesos-built-${{ github.sha }}
-          path: build/mesos-built-${{ github.sha }}.tar.gz
+      #- name: Upload the built tarball
+      #  uses: actions/upload-artifact@v1
+      #  with:
+      #    name: mesos-built-${{ github.sha }}
+      #    path: build/mesos-built-${{ github.sha }}.tar.gz
 
-      - name: Test mesos
-        run: docker run
-          -e GTEST_FILTER='-EnvironmentSecretIsolatorTest.*:ExamplesTest.DiskFullFramework:ContainerizerTest.ROOT_CGROUPS_BalloonFramework:ResourceOffersTest.ResourceOfferWithMultipleSlaves'
-          mesosbuild:"$GITHUB_SHA"
-          make check -j $(nproc)
+      #- name: Test mesos
+      #  run: docker run
+      #    -e GTEST_FILTER='-EnvironmentSecretIsolatorTest.*:ExamplesTest.DiskFullFramework:ContainerizerTest.ROOT_CGROUPS_BalloonFramework:ResourceOffersTest.ResourceOfferWithMultipleSlaves'
+      #    mesosbuild:"$GITHUB_SHA"
+      #    make check -j $(nproc)
 
       - name: Check branch name
         id: check-branch
@@ -43,9 +43,7 @@ jobs:
 
       - name: Get Previous tag
         id: previoustag
-        uses: "WyriHaximus/github-action-get-previous-tag@master"
-        env:
-          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        run: echo ::set-output tag=`git describe --tags --abbrev=0`
         if: steps.check-branch.outputs.match == 'true'
 
       - name: Get next version
