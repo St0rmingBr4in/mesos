@@ -8,6 +8,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 50
 
       - name: Build the Docker image
         run: docker build .
@@ -70,7 +72,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: mesos-built-${{ github.sha }}/mesos-built-${{ github.sha }}.tar.gz
+          asset_path: build/mesos-built-${{ github.sha }}.tar.gz
           asset_name: mesos-built-${{ steps.get_next_version.outputs.NEXT_VERSION }}.tar.gz
           asset_content_type: application/tar+gzip
         if: steps.check-branch.outputs.match == 'true'
