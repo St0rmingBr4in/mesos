@@ -8,20 +8,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-        with:
-          fetch-depth: 50
 
-      - name: Build the Docker image
-        run: docker build .
-          --file docker/Dockerfile
-          --tag mesosbuild:"$GITHUB_SHA"
-          --build-arg CONFIGURE_EXTRA_FLAGS="--enable-test-only-regression" --target=builder
-
-      - name: Save the build in tarball
+      - name: Fetch all history for all tags and branches
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          mkdir -p build
-          id=$(docker create mesosbuild:"$GITHUB_SHA")
-          docker cp $id:/src/mesos - | gzip > build/mesos-built-${{ github.sha }}.tar.gz
+          git fetch --prune --unshallow
+      #- name: Build the Docker image
+      #  run: docker build .
+      #    --file docker/Dockerfile
+      #    --tag mesosbuild:"$GITHUB_SHA"
+      #    --build-arg CONFIGURE_EXTRA_FLAGS="--enable-test-only-regression" --target=builder
+
+      #- name: Save the build in tarball
+      #  run: |
+      #    mkdir -p build
+      #    id=$(docker create mesosbuild:"$GITHUB_SHA")
+      #    docker cp $id:/src/mesos - | gzip > build/mesos-built-${{ github.sha }}.tar.gz
+
+      - name: tttt
+        run: |
+          mkdir build
+          touch build/mesos-built-${{ github.sha }}.tar.gz
 
       #- name: Upload the built tarball
       #  uses: actions/upload-artifact@v1
@@ -43,15 +51,18 @@ jobs:
               echo ::set-output name=match::true
           fi
 
-      - name: Get Previous tag
-        id: previoustag
-        run: echo ::set-output tag=`git describe --tags --abbrev=0`
-        if: steps.check-branch.outputs.match == 'true'
-
       - name: Get next version
         id: get_next_version
-        run: echo ::set-output name=NEXT_VERSION::$(echo ${{ steps.previoustag.outputs.tag }} | awk '{ match($0, /(.*?[^0-9])([0-9]+)$/, v); print v[1] v[2] + 1}')
+        run: echo ::set-output name=NEXT_VERSION::$(echo $(git describe --tags --abbrev=0) | awk '{ match($0, /(.*?[^0-9])([0-9]+)$/, v); print v[1] v[2] + 1}')
         if: steps.check-branch.outputs.match == 'true'
+
+      - name: Push tag
+        uses: anothrNick/github-tag-action@1.23.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CUSTOM_TAG: ${{ steps.get_next_version.outputs.NEXT_VERSION }}
+          RELEASE_BRANCHES: criteo/*
+          TAG_CONTEXT: branch
 
       - name: Create Release
         id: create_release
@@ -59,8 +70,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
+          tag_name: ${{ steps.get_next_version.outputs.NEXT_VERSION }}
+          release_name: Release ${{ steps.get_next_version.outputs.NEXT_VERSION }}
           draft: false
           prerelease: false
         if: steps.check-branch.outputs.match == 'true'
