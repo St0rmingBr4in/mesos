@@ -14,23 +14,19 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git fetch --prune --unshallow
-      #- name: Build the Docker image
-      #  run: docker build .
-      #    --file docker/Dockerfile
-      #    --tag mesosbuild:"$GITHUB_SHA"
-      #    --build-arg CONFIGURE_EXTRA_FLAGS="--enable-test-only-regression" --target=builder
+
+      - name: Build the Docker image
+        run: docker build .
+          --file docker/Dockerfile
+          --tag mesosbuild:"$GITHUB_SHA"
+          --build-arg CONFIGURE_EXTRA_FLAGS="--enable-test-only-regression" --target=builder
 
 
-      #- name: Save the build in tarball
-      #  run: |
-      #    mkdir -p build
-      #    id=$(docker create mesosbuild:"$GITHUB_SHA")
-      #    docker cp $id:/src/mesos - | gzip > build/mesos-built-${{ github.sha }}.tar.gz
-
-      - name: tttt
+      - name: Save the build in tarball
         run: |
-          mkdir build
-          touch build/mesos-built-${{ github.sha }}.tar.gz
+          mkdir -p build
+          id=$(docker create mesosbuild:"$GITHUB_SHA")
+          docker cp $id:/src/mesos - | gzip > build/mesos-built-${{ github.sha }}.tar.gz
 
       #- name: Upload the built tarball
       #  uses: actions/upload-artifact@v1
